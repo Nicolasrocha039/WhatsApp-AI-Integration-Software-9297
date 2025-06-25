@@ -1,7 +1,7 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 import SafeIcon from '../common/SafeIcon'
-import { FiBarChart3, FiTrendingUp, FiMessageSquare, FiClock, FiUsers, FiCpu, FiImage, FiZap } from 'react-icons/fi'
+import { FiBarChart, FiTrendingUp, FiMessageSquare, FiClock, FiUsers, FiCpu, FiImage, FiZap } from 'react-icons/fi'
 import { useAI } from '../contexts/AIContext'
 
 const Analytics = () => {
@@ -198,7 +198,7 @@ const Analytics = () => {
               <SafeIcon 
                 icon={
                   isPollinationsImageActive ? FiImage : 
-                  isPollinationsTextActive ? FiZap : FiBarChart3
+                  isPollinationsTextActive ? FiZap : FiBarChart
                 } 
                 className={`text-xl ${
                   isPollinationsImageActive ? 'text-pink-600' : 

@@ -7,7 +7,7 @@ import {
   FiSmartphone, 
   FiCpu, 
   FiMessageSquare, 
-  FiBarChart3, 
+  FiBarChart, 
   FiSettings 
 } from 'react-icons/fi'
 
@@ -19,7 +19,7 @@ const Sidebar = () => {
     { icon: FiSmartphone, label: 'Conexão', path: '/connection' },
     { icon: FiCpu, label: 'Config. IA', path: '/ai-config' },
     { icon: FiMessageSquare, label: 'Mensagens', path: '/messages' },
-    { icon: FiBarChart3, label: 'Analytics', path: '/analytics' },
+    { icon: FiBarChart, label: 'Analytics', path: '/analytics' },
     { icon: FiSettings, label: 'Configurações', path: '/settings' }
   ]
 

@@ -9,7 +9,7 @@ export default {
       colors: {
         whatsapp: {
           green: '#25D366',
-          dark: '#128C7E',
+          dark: '#128C7E', 
           light: '#DCF8C6',
           gray: '#F0F0F0'
         }
