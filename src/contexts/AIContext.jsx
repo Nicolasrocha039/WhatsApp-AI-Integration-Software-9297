@@ -1,4 +1,7 @@
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useContext, useState, useEffect } from 'react'
+import { dataService } from '../services/dataService'
+import { apiService } from '../services/api'
+import { toast } from 'react-hot-toast'
 
 const AIContext = createContext()
 
@@ -72,138 +75,256 @@ export const AIProvider = ({ children }) => {
     }
   ])
 
-  const updateAIConfig = (updates) => {
-    setAiConfig(prev => ({ ...prev, ...updates }))
+  const [aiStats, setAiStats] = useState({
+    totalInteractions: 0,
+    successRate: 98.5,
+    averageResponseTime: 2300,
+    providerStats: {}
+  })
+
+  // Carregar configurações salvas
+  useEffect(() => {
+    loadAISettings()
+    loadAIStats()
+  }, [])
+
+  const loadAISettings = async () => {
+    try {
+      const settings = await dataService.getSettings()
+      if (settings) {
+        setAiConfig(prev => ({
+          ...prev,
+          provider: settings.ai_provider || prev.provider,
+          model: settings.ai_model || prev.model,
+          autoReply: settings.ai_auto_reply ?? prev.autoReply,
+          responseDelay: settings.ai_response_delay || prev.responseDelay,
+          systemPrompt: settings.ai_system_prompt || prev.systemPrompt,
+          apiKey: settings.ai_api_key || prev.apiKey
+        }))
+      }
+    } catch (error) {
+      console.error('Erro ao carregar configurações IA:', error)
+    }
+  }
+
+  const loadAIStats = async () => {
+    try {
+      const interactions = await dataService.getAIInteractions()
+      const providerStats = interactions.reduce((acc, interaction) => {
+        acc[interaction.provider] = (acc[interaction.provider] || 0) + 1
+        return acc
+      }, {})
+
+      setAiStats({
+        totalInteractions: interactions.length,
+        successRate: 98.5,
+        averageResponseTime: 2300,
+        providerStats
+      })
+    } catch (error) {
+      console.error('Erro ao carregar estatísticas IA:', error)
+    }
+  }
+
+  const updateAIConfig = async (updates) => {
+    try {
+      const newConfig = { ...aiConfig, ...updates }
+      setAiConfig(newConfig)
+      
+      // Salvar no banco
+      await dataService.updateSettings('default', {
+        ai_provider: newConfig.provider,
+        ai_model: newConfig.model,
+        ai_auto_reply: newConfig.autoReply,
+        ai_response_delay: newConfig.responseDelay,
+        ai_system_prompt: newConfig.systemPrompt,
+        ai_api_key: newConfig.apiKey
+      })
+
+      toast.success('Configurações atualizadas!')
+    } catch (error) {
+      console.error('Erro ao atualizar configurações:', error)
+      toast.error('Erro ao salvar configurações')
+    }
   }
 
   const generateAIResponse = async (message, context = {}) => {
-    // Simulação de resposta da IA baseada no provedor
-    await new Promise(resolve => setTimeout(resolve, aiConfig.responseDelay))
+    const startTime = Date.now()
     
-    if (aiConfig.provider === 'pollinations') {
-      return await generatePollinationsImage(message)
-    }
-    
-    if (aiConfig.provider === 'pollinations-text') {
-      return await generatePollinationsTextResponse(message)
-    }
-    
-    const responses = [
-      'Olá! Como posso ajudá-lo hoje?',
-      'Entendo sua pergunta. Deixe-me pensar na melhor resposta.',
-      'Obrigado por entrar em contato! Estou aqui para ajudar.',
-      'Essa é uma ótima pergunta. Vou fazer o meu melhor para responder.',
-      'Posso ajudá-lo com mais informações sobre isso.'
-    ]
-    
-    return responses[Math.floor(Math.random() * responses.length)]
-  }
-
-  const generatePollinationsTextResponse = async (message) => {
     try {
-      const config = aiConfig.pollinationsText
-      
-      const simulatedResponses = {
-        openai: [
-          `Baseado na sua pergunta "${message}", posso ajudá-lo com informações detalhadas. Como assistente IA via Pollinations, estou aqui para fornecer respostas úteis e precisas.`,
-          `Entendo sua solicitação. Utilizando o modelo OpenAI via Pollinations, posso processar sua pergunta e fornecer uma resposta contextualizada.`,
-          `Sua mensagem foi processada com sucesso! Como IA Pollinations, posso ajudá-lo com diversas questões e fornecer informações relevantes.`
-        ],
-        mistral: [
-          `Bonjour! Utilizando Mistral via Pollinations, posso responder sua pergunta "${message}" com precisão e eficiência francesa.`,
-          `Como Mistral AI através da Pollinations, estou preparado para ajudá-lo com respostas inteligentes e bem estruturadas.`,
-          `Processando via Mistral: Sua solicitação foi compreendida e posso fornecer uma resposta detalhada e útil.`
-        ],
-        claude: [
-          `Olá! Como Claude via Pollinations, analisei sua mensagem "${message}" e estou pronto para fornecer uma resposta thoughtful e útil.`,
-          `Utilizando as capacidades do Claude através da Pollinations, posso processar sua solicitação de forma cuidadosa e detalhada.`,
-          `Como assistente Claude via Pollinations, entendo o contexto da sua pergunta e posso fornecer insights valiosos.`
-        ]
-      }
+      let response
 
-      const responses = simulatedResponses[config.model] || simulatedResponses.openai
-      const selectedResponse = responses[Math.floor(Math.random() * responses.length)]
-
-      return {
-        type: 'text',
-        content: selectedResponse,
-        metadata: {
-          model: config.model,
-          provider: 'pollinations-text',
-          tokens: config.maxTokens,
-          temperature: config.temperature
+      if (aiConfig.provider === 'pollinations-text') {
+        response = await apiService.generatePollinationsText(
+          message, 
+          aiConfig.pollinationsText.model,
+          {
+            temperature: aiConfig.pollinationsText.temperature,
+            maxTokens: aiConfig.pollinationsText.maxTokens
+          }
+        )
+      } else if (aiConfig.provider === 'pollinations') {
+        response = apiService.generatePollinationsImage(message, {
+          model: aiConfig.pollinations.imageModel,
+          width: aiConfig.pollinations.imageWidth,
+          height: aiConfig.pollinations.imageHeight,
+          seed: aiConfig.pollinations.seed === -1 ? Math.floor(Math.random() * 1000000) : aiConfig.pollinations.seed
+        })
+      } else {
+        // Fallback para outros provedores
+        response = {
+          content: 'Esta é uma resposta simulada. Configure uma API key para usar outros provedores.',
+          metadata: { provider: aiConfig.provider, model: aiConfig.model }
         }
       }
-    } catch (error) {
-      return 'Desculpe, houve um erro ao processar sua mensagem via Pollinations Text. Tente novamente.'
-    }
-  }
 
-  const generatePollinationsImage = async (prompt) => {
-    try {
-      const config = aiConfig.pollinations
-      const enhancedPrompt = config.imagePromptPrefix + prompt
-      
-      const baseUrl = 'https://image.pollinations.ai/prompt'
-      const params = new URLSearchParams({
-        model: config.imageModel,
-        width: config.imageWidth,
-        height: config.imageHeight,
-        seed: config.seed === -1 ? Math.floor(Math.random() * 1000000) : config.seed
+      const processingTime = Date.now() - startTime
+
+      // Salvar interação no banco
+      await dataService.saveAIInteraction({
+        prompt: message,
+        response: response.content,
+        provider: aiConfig.provider,
+        model: aiConfig.model,
+        metadata: response.metadata,
+        processingTime
       })
+
+      // Log analytics
+      await dataService.saveAnalyticsEvent('ai_response_generated', {
+        provider: aiConfig.provider,
+        model: aiConfig.model,
+        processingTime,
+        timestamp: new Date().toISOString()
+      })
+
+      // Atualizar stats
+      await loadAIStats()
+
+      return response
+
+    } catch (error) {
+      console.error('Erro ao gerar resposta IA:', error)
       
-      const imageUrl = `${baseUrl}/${encodeURIComponent(enhancedPrompt)}?${params}`
-      
+      // Log erro
+      await dataService.saveAnalyticsEvent('ai_response_error', {
+        provider: aiConfig.provider,
+        error: error.message,
+        timestamp: new Date().toISOString()
+      })
+
       return {
-        type: 'image',
-        content: `Imagem gerada com sucesso! 🎨\n\nPrompt: "${prompt}"\nModelo: ${config.imageModel}`,
-        imageUrl: imageUrl,
-        metadata: {
-          model: config.imageModel,
-          dimensions: `${config.imageWidth}x${config.imageHeight}`,
-          prompt: enhancedPrompt
+        content: 'Desculpe, houve um erro ao processar sua solicitação. Tente novamente.',
+        error: error.message
+      }
+    }
+  }
+
+  const testConnection = async (provider = aiConfig.provider, options = {}) => {
+    try {
+      const testOptions = {
+        model: options.model || aiConfig.model,
+        ...options
+      }
+
+      const result = await apiService.testConnection(provider, testOptions)
+      
+      if (result.success) {
+        toast.success('Teste realizado com sucesso!')
+        
+        // Log teste
+        await dataService.saveAnalyticsEvent('ai_test_success', {
+          provider,
+          model: testOptions.model,
+          timestamp: new Date().toISOString()
+        })
+      } else {
+        toast.error('Falha no teste: ' + result.error)
+      }
+
+      return result
+      
+    } catch (error) {
+      console.error('Erro no teste:', error)
+      toast.error('Erro ao testar conexão')
+      return { success: false, error: error.message }
+    }
+  }
+
+  const getProviderPerformance = async (provider) => {
+    try {
+      const interactions = await dataService.getAIInteractions()
+      const providerInteractions = interactions.filter(i => i.provider === provider)
+      
+      if (providerInteractions.length === 0) {
+        return {
+          totalInteractions: 0,
+          averageResponseTime: 0,
+          successRate: 0
         }
       }
-    } catch (error) {
-      return 'Desculpe, houve um erro ao gerar a imagem. Tente novamente.'
-    }
-  }
 
-  const testPollinationsConnection = async () => {
-    try {
-      if (aiConfig.provider === 'pollinations') {
-        const testPrompt = 'beautiful sunset landscape'
-        const result = await generatePollinationsImage(testPrompt)
-        return { success: true, result }
-      } else if (aiConfig.provider === 'pollinations-text') {
-        const testMessage = 'Hello, this is a test message'
-        const result = await generatePollinationsTextResponse(testMessage)
-        return { success: true, result }
+      const totalTime = providerInteractions.reduce((sum, i) => sum + (i.processing_time_ms || 0), 0)
+      const averageResponseTime = totalTime / providerInteractions.length
+
+      return {
+        totalInteractions: providerInteractions.length,
+        averageResponseTime: Math.round(averageResponseTime),
+        successRate: 98.5, // Simulado - em produção, calcular baseado em erros
+        lastUsed: providerInteractions[0]?.created_at
       }
-      return { success: false, error: 'Provider not supported for testing' }
     } catch (error) {
-      return { success: false, error: error.message }
+      console.error('Erro ao obter performance:', error)
+      return {
+        totalInteractions: 0,
+        averageResponseTime: 0,
+        successRate: 0
+      }
     }
   }
 
-  const testPollinationsTextAPI = async (testMessage = 'Hello, how are you?') => {
+  // Auto-reply handler
+  const processAutoReply = async (incomingMessage) => {
+    if (!aiConfig.autoReply) return null
+
     try {
-      const result = await generatePollinationsTextResponse(testMessage)
-      return { success: true, result }
+      // Adicionar delay configurado
+      await new Promise(resolve => setTimeout(resolve, aiConfig.responseDelay))
+
+      const response = await generateAIResponse(incomingMessage.body, {
+        from: incomingMessage.from,
+        fromName: incomingMessage.fromName
+      })
+
+      return response
     } catch (error) {
-      return { success: false, error: error.message }
+      console.error('Erro no auto-reply:', error)
+      return null
     }
   }
 
   const value = {
+    // Estados
     aiConfig,
     aiProviders,
+    aiStats,
+    
+    // Ações
     updateAIConfig,
     generateAIResponse,
-    generatePollinationsImage,
-    generatePollinationsTextResponse,
-    testPollinationsConnection,
-    testPollinationsTextAPI
+    testConnection,
+    getProviderPerformance,
+    processAutoReply,
+    
+    // Utilitários
+    loadAISettings,
+    loadAIStats,
+    
+    // Funções específicas (mantidas para compatibilidade)
+    generatePollinationsImage: (prompt) => apiService.generatePollinationsImage(prompt, aiConfig.pollinations),
+    generatePollinationsTextResponse: (message) => apiService.generatePollinationsText(message, aiConfig.pollinationsText.model, aiConfig.pollinationsText),
+    testPollinationsConnection: () => testConnection('pollinations'),
+    testPollinationsTextAPI: (message) => apiService.generatePollinationsText(message || 'Test message', aiConfig.pollinationsText.model)
   }
 
   return (

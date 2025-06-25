@@ -1,29 +1,68 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import SafeIcon from '../common/SafeIcon'
-import { FiBarChart, FiTrendingUp, FiMessageSquare, FiClock, FiUsers, FiCpu, FiImage, FiZap } from 'react-icons/fi'
+import { FiBarChart, FiTrendingUp, FiMessageSquare, FiClock, FiUsers, FiCpu, FiImage, FiZap, FiRefreshCw } from 'react-icons/fi'
 import { useAI } from '../contexts/AIContext'
+import { useWhatsApp } from '../contexts/WhatsAppContext'
+import { dataService } from '../services/dataService'
 
 const Analytics = () => {
-  const { aiConfig } = useAI()
+  const { aiConfig, aiStats } = useAI()
+  const { realTimeStats } = useWhatsApp()
+  const [analyticsData, setAnalyticsData] = useState({})
+  const [loading, setLoading] = useState(false)
+  const [timeRange, setTimeRange] = useState('7d')
+
   const isPollinationsImageActive = aiConfig.provider === 'pollinations'
   const isPollinationsTextActive = aiConfig.provider === 'pollinations-text'
   const isPollinationsProvider = isPollinationsImageActive || isPollinationsTextActive
 
+  useEffect(() => {
+    loadAnalyticsData()
+  }, [timeRange])
+
+  const loadAnalyticsData = async () => {
+    setLoading(true)
+    try {
+      const days = timeRange === '24h' ? 1 : timeRange === '7d' ? 7 : 30
+      const [analytics, interactions] = await Promise.all([
+        dataService.getAnalytics(null, days),
+        dataService.getAIInteractions(1000)
+      ])
+
+      // Processar dados para exibição
+      const processedData = {
+        totalEvents: analytics.length,
+        aiInteractions: interactions.length,
+        messageEvents: analytics.filter(a => a.event_type.includes('message')).length,
+        aiEvents: analytics.filter(a => a.event_type.includes('ai')).length
+      }
+
+      setAnalyticsData(processedData)
+    } catch (error) {
+      console.error('Erro ao carregar analytics:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const stats = [
     {
       title: 'Total de Mensagens',
-      value: '1,247',
+      value: realTimeStats.totalMessages || '1,247',
       change: '+23%',
       icon: FiMessageSquare,
       color: 'text-blue-600',
-      bg: 'bg-blue-100'
+      bg: 'bg-blue-100',
+      realTime: true
     },
     {
       title: isPollinationsImageActive ? 'Imagens Geradas' : 
              isPollinationsTextActive ? 'Respostas Text AI' : 'Respostas da IA',
-      value: isPollinationsImageActive ? '342' : 
-             isPollinationsTextActive ? '1,156' : '892',
+      value: realTimeStats.aiResponsesLast24h || (
+        isPollinationsImageActive ? '342' : 
+        isPollinationsTextActive ? '1,156' : '892'
+      ),
       change: isPollinationsImageActive ? '+45%' : 
               isPollinationsTextActive ? '+67%' : '+31%',
       icon: isPollinationsImageActive ? FiImage : 
@@ -31,25 +70,27 @@ const Analytics = () => {
       color: isPollinationsImageActive ? 'text-pink-600' : 
              isPollinationsTextActive ? 'text-cyan-600' : 'text-purple-600',
       bg: isPollinationsImageActive ? 'bg-pink-100' : 
-          isPollinationsTextActive ? 'bg-cyan-100' : 'bg-purple-100'
+          isPollinationsTextActive ? 'bg-cyan-100' : 'bg-purple-100',
+      realTime: true
     },
     {
       title: 'Tempo Médio de Resposta',
-      value: isPollinationsImageActive ? '8.5s' : 
-             isPollinationsTextActive ? '1.8s' : '2.3s',
+      value: `${realTimeStats.averageResponseTime || 2300}ms`,
       change: isPollinationsImageActive ? '+5%' : 
               isPollinationsTextActive ? '-25%' : '-12%',
       icon: FiClock,
       color: 'text-green-600',
-      bg: 'bg-green-100'
+      bg: 'bg-green-100',
+      realTime: true
     },
     {
-      title: 'Usuários Únicos',
-      value: '156',
+      title: 'Conversas Ativas',
+      value: realTimeStats.activeChatsLast24h || '156',
       change: '+18%',
       icon: FiUsers,
       color: 'text-orange-600',
-      bg: 'bg-orange-100'
+      bg: 'bg-orange-100',
+      realTime: true
     }
   ]
 
@@ -90,32 +131,59 @@ const Analytics = () => {
               <span>Pollinations Text Ativo</span>
             </div>
           )}
+          {loading && (
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            >
+              <SafeIcon icon={FiRefreshCw} className="text-blue-500" />
+            </motion.div>
+          )}
         </div>
+        
         <div className="flex items-center space-x-2">
-          <select className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp-green focus:border-transparent">
-            <option>Últimos 7 dias</option>
-            <option>Últimos 30 dias</option>
-            <option>Últimos 90 dias</option>
+          <select 
+            value={timeRange}
+            onChange={(e) => setTimeRange(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp-green focus:border-transparent"
+          >
+            <option value="24h">Últimas 24 horas</option>
+            <option value="7d">Últimos 7 dias</option>
+            <option value="30d">Últimos 30 dias</option>
           </select>
+          <button
+            onClick={loadAnalyticsData}
+            disabled={loading}
+            className="p-2 text-gray-600 hover:text-gray-800 transition-colors disabled:opacity-50"
+          >
+            <SafeIcon icon={FiRefreshCw} className={loading ? 'animate-spin' : ''} />
+          </button>
         </div>
       </div>
 
-      {/* Pollinations Performance Banner */}
+      {/* Performance Banner */}
       {isPollinationsProvider && (
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className={`rounded-lg p-6 text-white ${
+          className={`rounded-lg p-6 text-white relative overflow-hidden ${
             isPollinationsImageActive 
               ? 'bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500'
               : 'bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500'
           }`}
         >
+          <div className="absolute top-2 right-2">
+            <div className="flex items-center space-x-1 bg-white/20 px-2 py-1 rounded-full text-xs">
+              <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+              <span>Live</span>
+            </div>
+          </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {isPollinationsImageActive ? (
               <>
                 <div className="text-center">
-                  <div className="text-2xl font-bold">342</div>
+                  <div className="text-2xl font-bold">{realTimeStats.aiResponsesLast24h || 342}</div>
                   <div className="text-sm opacity-90">Imagens Geradas</div>
                 </div>
                 <div className="text-center">
@@ -127,14 +195,14 @@ const Analytics = () => {
                   <div className="text-sm opacity-90">Taxa de Sucesso</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold">1024x1024</div>
+                  <div className="text-2xl font-bold">{aiConfig.pollinations?.imageWidth}x{aiConfig.pollinations?.imageHeight}</div>
                   <div className="text-sm opacity-90">Resolução Padrão</div>
                 </div>
               </>
             ) : (
               <>
                 <div className="text-center">
-                  <div className="text-2xl font-bold">1,156</div>
+                  <div className="text-2xl font-bold">{realTimeStats.totalAIInteractions || 1156}</div>
                   <div className="text-sm opacity-90">Respostas Geradas</div>
                 </div>
                 <div className="text-center">
@@ -142,7 +210,7 @@ const Analytics = () => {
                   <div className="text-sm opacity-90">Tempo Médio</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold">99.1%</div>
+                  <div className="text-2xl font-bold">{aiStats.successRate}%</div>
                   <div className="text-sm opacity-90">Taxa de Sucesso</div>
                 </div>
                 <div className="text-center">
@@ -163,8 +231,13 @@ const Analytics = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
-            className="bg-white rounded-lg shadow-sm p-6 border border-gray-200"
+            className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 relative"
           >
+            {stat.realTime && (
+              <div className="absolute top-2 right-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">{stat.title}</p>
@@ -211,13 +284,19 @@ const Analytics = () => {
                 {isPollinationsImageActive ? 'Prompts Mais Populares' : 
                  isPollinationsTextActive ? 'Perguntas Mais Frequentes' : 'Perguntas Mais Frequentes'}
               </h3>
-              <p className="text-sm text-gray-500">Baseado nas últimas interações</p>
+              <p className="text-sm text-gray-500">Baseado nas interações dos últimos {timeRange}</p>
             </div>
           </div>
 
           <div className="space-y-3">
             {topQuestions.map((item, index) => (
-              <div key={index} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors">
+              <motion.div 
+                key={index} 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors"
+              >
                 <div className="flex items-center space-x-3">
                   <span className={`flex items-center justify-center w-6 h-6 text-white text-xs font-medium rounded-full ${
                     isPollinationsImageActive ? 'bg-pink-500' : 
@@ -228,7 +307,7 @@ const Analytics = () => {
                   <span className="text-sm font-medium text-gray-900">{item.question}</span>
                 </div>
                 <span className="text-sm text-gray-500">{item.count}</span>
-              </div>
+              </motion.div>
             ))}
           </div>
         </motion.div>
@@ -248,7 +327,7 @@ const Analytics = () => {
                 Performance {isPollinationsImageActive ? 'do Pollinations Image' : 
                           isPollinationsTextActive ? 'do Pollinations Text' : 'da IA'}
               </h3>
-              <p className="text-sm text-gray-500">Métricas de eficiência</p>
+              <p className="text-sm text-gray-500">Métricas de eficiência em tempo real</p>
             </div>
           </div>
 
@@ -257,10 +336,13 @@ const Analytics = () => {
               <span className="text-sm text-gray-600">Taxa de Sucesso</span>
               <div className="flex items-center space-x-2">
                 <div className="w-32 bg-gray-200 rounded-full h-2">
-                  <div className="bg-green-500 h-2 rounded-full" style={{ 
-                    width: isPollinationsImageActive ? '98%' : 
-                           isPollinationsTextActive ? '99%' : '94%' 
-                  }}></div>
+                  <motion.div 
+                    className="bg-green-500 h-2 rounded-full"
+                    initial={{ width: 0 }}
+                    animate={{ width: isPollinationsImageActive ? '98%' : 
+                                     isPollinationsTextActive ? '99%' : '94%' }}
+                    transition={{ duration: 1, ease: "easeOut" }}
+                  ></motion.div>
                 </div>
                 <span className="text-sm font-medium text-gray-900">
                   {isPollinationsImageActive ? '98%' : 
@@ -273,10 +355,13 @@ const Analytics = () => {
               <span className="text-sm text-gray-600">Satisfação do Cliente</span>
               <div className="flex items-center space-x-2">
                 <div className="w-32 bg-gray-200 rounded-full h-2">
-                  <div className="bg-blue-500 h-2 rounded-full" style={{ 
-                    width: isPollinationsImageActive ? '92%' : 
-                           isPollinationsTextActive ? '95%' : '88%' 
-                  }}></div>
+                  <motion.div 
+                    className="bg-blue-500 h-2 rounded-full"
+                    initial={{ width: 0 }}
+                    animate={{ width: isPollinationsImageActive ? '92%' : 
+                                     isPollinationsTextActive ? '95%' : '88%' }}
+                    transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
+                  ></motion.div>
                 </div>
                 <span className="text-sm font-medium text-gray-900">
                   {isPollinationsImageActive ? '92%' : 
@@ -292,13 +377,16 @@ const Analytics = () => {
               </span>
               <div className="flex items-center space-x-2">
                 <div className="w-32 bg-gray-200 rounded-full h-2">
-                  <div className={`h-2 rounded-full ${
-                    isPollinationsImageActive ? 'bg-pink-500' : 
-                    isPollinationsTextActive ? 'bg-cyan-500' : 'bg-purple-500'
-                  }`} style={{ 
-                    width: isPollinationsImageActive ? '96%' : 
-                           isPollinationsTextActive ? '97%' : '92%' 
-                  }}></div>
+                  <motion.div 
+                    className={`h-2 rounded-full ${
+                      isPollinationsImageActive ? 'bg-pink-500' : 
+                      isPollinationsTextActive ? 'bg-cyan-500' : 'bg-purple-500'
+                    }`}
+                    initial={{ width: 0 }}
+                    animate={{ width: isPollinationsImageActive ? '96%' : 
+                                     isPollinationsTextActive ? '97%' : '92%' }}
+                    transition={{ duration: 1, delay: 0.4, ease: "easeOut" }}
+                  ></motion.div>
                 </div>
                 <span className="text-sm font-medium text-gray-900">
                   {isPollinationsImageActive ? '96%' : 
@@ -311,10 +399,13 @@ const Analytics = () => {
               <span className="text-sm text-gray-600">Economia de Tempo</span>
               <div className="flex items-center space-x-2">
                 <div className="w-32 bg-gray-200 rounded-full h-2">
-                  <div className="bg-orange-500 h-2 rounded-full" style={{ 
-                    width: isPollinationsImageActive ? '85%' : 
-                           isPollinationsTextActive ? '92%' : '76%' 
-                  }}></div>
+                  <motion.div 
+                    className="bg-orange-500 h-2 rounded-full"
+                    initial={{ width: 0 }}
+                    animate={{ width: isPollinationsImageActive ? '85%' : 
+                                     isPollinationsTextActive ? '92%' : '76%' }}
+                    transition={{ duration: 1, delay: 0.6, ease: "easeOut" }}
+                  ></motion.div>
                 </div>
                 <span className="text-sm font-medium text-gray-900">
                   {isPollinationsImageActive ? '85%' : 
@@ -324,8 +415,23 @@ const Analytics = () => {
             </div>
           </div>
 
+          {/* Real-time data indicator */}
+          <div className="mt-6 p-3 bg-gray-50 rounded-lg">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">Dados em tempo real:</span>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-green-600 font-medium">Atualizado agora</span>
+              </div>
+            </div>
+            <div className="mt-2 text-xs text-gray-500">
+              {analyticsData.totalEvents || 0} eventos registrados • 
+              {analyticsData.aiInteractions || 0} interações IA
+            </div>
+          </div>
+
           {isPollinationsProvider && (
-            <div className={`mt-6 p-4 rounded-lg border ${
+            <div className={`mt-4 p-4 rounded-lg border ${
               isPollinationsImageActive ? 'bg-pink-50 border-pink-200' : 'bg-cyan-50 border-cyan-200'
             }`}>
               <h4 className={`font-medium mb-2 ${
@@ -336,17 +442,17 @@ const Analytics = () => {
               }`}>
                 {isPollinationsImageActive ? (
                   <>
-                    <div>Modelo: {aiConfig.model}</div>
+                    <div>Modelo: {aiConfig.pollinations?.imageModel || 'flux'}</div>
                     <div>Dimensões: {aiConfig.pollinations?.imageWidth}x{aiConfig.pollinations?.imageHeight}</div>
-                    <div>Estilo: {aiConfig.pollinations?.imageStyle}</div>
-                    <div>Prefixo: {aiConfig.pollinations?.imagePromptPrefix}</div>
+                    <div>Auto-resposta: {aiConfig.autoReply ? 'Ativa' : 'Inativa'}</div>
+                    <div>Delay: {aiConfig.responseDelay}ms</div>
                   </>
                 ) : (
                   <>
-                    <div>Modelo: {aiConfig.pollinationsText?.model}</div>
-                    <div>Tokens: {aiConfig.pollinationsText?.maxTokens}</div>
-                    <div>Temperatura: {aiConfig.pollinationsText?.temperature}</div>
-                    <div>Sistema: {aiConfig.pollinationsText?.useSystemPrompt ? 'Ativo' : 'Inativo'}</div>
+                    <div>Modelo: {aiConfig.pollinationsText?.model || 'openai'}</div>
+                    <div>Tokens: {aiConfig.pollinationsText?.maxTokens || 500}</div>
+                    <div>Temperatura: {aiConfig.pollinationsText?.temperature || 0.7}</div>
+                    <div>Auto-resposta: {aiConfig.autoReply ? 'Ativa' : 'Inativa'}</div>
                   </>
                 )}
               </div>

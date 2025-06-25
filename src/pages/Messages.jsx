@@ -1,135 +1,132 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import SafeIcon from '../common/SafeIcon'
-import { FiMessageSquare, FiSend, FiUser, FiCpu, FiSearch, FiFilter, FiImage, FiZap } from 'react-icons/fi'
+import { FiMessageSquare, FiSend, FiSearch, FiFilter, FiImage, FiZap, FiCpu } from 'react-icons/fi'
 import { useWhatsApp } from '../contexts/WhatsAppContext'
 import { useAI } from '../contexts/AIContext'
+import { toast } from 'react-hot-toast'
 
 const Messages = () => {
-  const { messages, sendMessage } = useWhatsApp()
-  const { generateAIResponse, aiConfig } = useAI()
+  const { 
+    messages, 
+    conversations, 
+    sendMessage, 
+    isConnected, 
+    phoneNumber,
+    loading 
+  } = useWhatsApp()
+  
+  const { aiConfig, processAutoReply } = useAI()
+  
   const [selectedChat, setSelectedChat] = useState(null)
   const [newMessage, setNewMessage] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
+  const [sending, setSending] = useState(false)
 
-  // Mock data para demonstração
-  const mockChats = [
-    {
-      id: 1,
-      name: 'João Silva',
-      lastMessage: 'Olá, preciso de ajuda com meu pedido',
-      timestamp: new Date(),
-      unread: 2,
-      avatar: 'JS'
-    },
-    {
-      id: 2,
-      name: 'Maria Santos',
-      lastMessage: 'Obrigada pela ajuda!',
-      timestamp: new Date(Date.now() - 300000),
-      unread: 0,
-      avatar: 'MS'
-    },
-    {
-      id: 3,
-      name: 'Carlos Oliveira',
-      lastMessage: 'Quando chegará meu produto?',
-      timestamp: new Date(Date.now() - 600000),
-      unread: 1,
-      avatar: 'CO'
-    },
-    {
-      id: 4,
-      name: 'Ana Costa',
-      lastMessage: aiConfig.provider === 'pollinations-text' ? 'Como funciona a IA de texto?' : 'Gere uma imagem de um gato fofo',
-      timestamp: new Date(Date.now() - 900000),
-      unread: 0,
-      avatar: 'AC'
+  // Selecionar primeira conversa automaticamente
+  useEffect(() => {
+    if (conversations.length > 0 && !selectedChat) {
+      setSelectedChat(conversations[0])
     }
-  ]
-
-  const mockMessages = [
-    {
-      id: 1,
-      sender: 'João Silva',
-      message: 'Olá, preciso de ajuda com meu pedido',
-      timestamp: new Date(Date.now() - 900000),
-      type: 'incoming'
-    },
-    {
-      id: 2,
-      sender: 'IA Assistant',
-      message: aiConfig.provider === 'pollinations-text' 
-        ? 'Olá! Como assistente IA via Pollinations Text, posso ajudá-lo com seu pedido usando modelos avançados de linguagem. Pode me fornecer o número do pedido?'
-        : 'Olá! Claro, posso ajudá-lo com seu pedido. Pode me fornecer o número do pedido?',
-      timestamp: new Date(Date.now() - 870000),
-      type: aiConfig.provider === 'pollinations-text' ? 'text-ai' : 'ai'
-    },
-    {
-      id: 3,
-      sender: 'Ana Costa',
-      message: aiConfig.provider === 'pollinations-text' 
-        ? 'Como funciona a IA de texto da Pollinations? Quais modelos estão disponíveis?'
-        : 'Gere uma imagem de um gato fofo brincando no jardim',
-      timestamp: new Date(Date.now() - 600000),
-      type: 'incoming'
-    },
-    {
-      id: 4,
-      sender: 'IA Assistant',
-      message: aiConfig.provider === 'pollinations-text'
-        ? 'Utilizando Pollinations Text API, temos acesso a múltiplos modelos de IA:\n\n• OpenAI: Modelo versátil e preciso\n• Mistral: IA francesa com excelente performance\n• Claude: Assistente thoughtful da Anthropic\n\nTodos gratuitos via text.pollinations.ai! 🚀'
-        : aiConfig.provider === 'pollinations'
-        ? 'Imagem gerada com sucesso! 🎨\n\nPrompt: "Gere uma imagem de um gato fofo brincando no jardim"\nModelo: flux'
-        : 'Claro! Vou processar sua solicitação.',
-      timestamp: new Date(Date.now() - 590000),
-      type: aiConfig.provider === 'pollinations-text' ? 'text-ai' : aiConfig.provider === 'pollinations' ? 'ai' : 'ai',
-      imageUrl: aiConfig.provider === 'pollinations' ? 'https://image.pollinations.ai/prompt/high%20quality,%20detailed,%20cute%20cat%20playing%20in%20garden?model=flux&width=1024&height=1024&seed=123456' : null,
-      isImage: aiConfig.provider === 'pollinations'
-    },
-    {
-      id: 5,
-      sender: 'Ana Costa',
-      message: aiConfig.provider === 'pollinations-text' ? 'Incrível! Vou testar.' : 'Perfeita! Obrigada!',
-      timestamp: new Date(Date.now() - 300000),
-      type: 'incoming'
-    }
-  ]
+  }, [conversations, selectedChat])
 
   const handleSendMessage = async (e) => {
     e.preventDefault()
-    if (!newMessage.trim() || !selectedChat) return
-
-    await sendMessage(selectedChat.name, newMessage)
-    
-    // Simular resposta automática da IA se estiver ativada
-    if (aiConfig.autoReply) {
-      setTimeout(async () => {
-        const aiResponse = await generateAIResponse(newMessage)
-        // Aqui você adicionaria a resposta da IA às mensagens
-        console.log('Resposta da IA:', aiResponse)
-      }, aiConfig.responseDelay)
+    if (!newMessage.trim() || !selectedChat || !isConnected) {
+      if (!isConnected) {
+        toast.error('WhatsApp não está conectado')
+      }
+      return
     }
-    
-    setNewMessage('')
+
+    setSending(true)
+    try {
+      await sendMessage(selectedChat.contact_number, newMessage, {
+        contactName: selectedChat.contact_name,
+        type: 'text'
+      })
+      
+      setNewMessage('')
+      
+      // Simular resposta automática se ativada
+      if (aiConfig.autoReply) {
+        setTimeout(async () => {
+          const mockIncomingMessage = {
+            body: `Resposta automática para: "${newMessage}"`,
+            from: selectedChat.contact_number,
+            fromName: selectedChat.contact_name
+          }
+          
+          const aiResponse = await processAutoReply(mockIncomingMessage)
+          if (aiResponse) {
+            await sendMessage(selectedChat.contact_number, aiResponse.content, {
+              contactName: 'WhatsApp AI',
+              type: 'text'
+            })
+          }
+        }, aiConfig.responseDelay)
+      }
+      
+    } catch (error) {
+      console.error('Erro ao enviar mensagem:', error)
+      toast.error('Erro ao enviar mensagem')
+    } finally {
+      setSending(false)
+    }
   }
 
-  const filteredChats = mockChats.filter(chat =>
-    chat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    chat.lastMessage.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredConversations = conversations.filter(conversation =>
+    (conversation.contact_name || conversation.contact_number)
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
   )
 
-  const formatTime = (date) => {
+  const getMessagesForChat = (contactNumber) => {
+    return messages.filter(message => 
+      message.from_number === contactNumber || 
+      message.to_number === contactNumber
+    ).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+  }
+
+  const formatTime = (dateString) => {
     return new Intl.DateTimeFormat('pt-BR', {
       hour: '2-digit',
       minute: '2-digit'
-    }).format(date)
+    }).format(new Date(dateString))
   }
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString)
+    const today = new Date()
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+
+    if (date.toDateString() === today.toDateString()) {
+      return 'Hoje'
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return 'Ontem'
+    } else {
+      return new Intl.DateTimeFormat('pt-BR', {
+        day: '2-digit',
+        month: '2-digit'
+      }).format(date)
+    }
+  }
+
+  const chatMessages = selectedChat ? getMessagesForChat(selectedChat.contact_number) : []
 
   return (
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Mensagens</h1>
+        <div className="flex items-center space-x-3">
+          <h1 className="text-2xl font-bold text-gray-900">Mensagens</h1>
+          {!isConnected && (
+            <div className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm">
+              WhatsApp Desconectado
+            </div>
+          )}
+        </div>
+        
         <div className="flex items-center space-x-2">
           <div className="relative">
             <SafeIcon icon={FiSearch} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -155,40 +152,56 @@ const Messages = () => {
           className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden"
         >
           <div className="p-4 border-b border-gray-200">
-            <h3 className="font-semibold text-gray-900">Conversas Ativas</h3>
+            <h3 className="font-semibold text-gray-900">
+              Conversas ({filteredConversations.length})
+            </h3>
           </div>
           
           <div className="overflow-y-auto max-h-96">
-            {filteredChats.map((chat) => (
-              <motion.div
-                key={chat.id}
-                whileHover={{ backgroundColor: '#f9fafb' }}
-                onClick={() => setSelectedChat(chat)}
-                className={`p-4 cursor-pointer border-b border-gray-100 transition-colors ${
-                  selectedChat?.id === chat.id ? 'bg-whatsapp-green/10 border-whatsapp-green/20' : ''
-                }`}
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-whatsapp-green rounded-full flex items-center justify-center text-white font-semibold">
-                    {chat.avatar}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-medium text-gray-900 truncate">{chat.name}</h4>
-                      <span className="text-xs text-gray-500">
-                        {formatTime(chat.timestamp)}
-                      </span>
+            {loading ? (
+              <div className="p-4 text-center text-gray-500">
+                Carregando conversas...
+              </div>
+            ) : filteredConversations.length === 0 ? (
+              <div className="p-4 text-center text-gray-500">
+                {searchTerm ? 'Nenhuma conversa encontrada' : 'Nenhuma conversa ainda'}
+              </div>
+            ) : (
+              filteredConversations.map((conversation) => (
+                <motion.div
+                  key={conversation.id}
+                  whileHover={{ backgroundColor: '#f9fafb' }}
+                  onClick={() => setSelectedChat(conversation)}
+                  className={`p-4 cursor-pointer border-b border-gray-100 transition-colors ${
+                    selectedChat?.id === conversation.id ? 'bg-whatsapp-green/10 border-whatsapp-green/20' : ''
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 bg-whatsapp-green rounded-full flex items-center justify-center text-white font-semibold">
+                      {(conversation.contact_name || conversation.contact_number).charAt(0).toUpperCase()}
                     </div>
-                    <p className="text-sm text-gray-500 truncate">{chat.lastMessage}</p>
-                  </div>
-                  {chat.unread > 0 && (
-                    <div className="w-5 h-5 bg-whatsapp-green text-white text-xs rounded-full flex items-center justify-center">
-                      {chat.unread}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium text-gray-900 truncate">
+                          {conversation.contact_name || conversation.contact_number}
+                        </h4>
+                        <span className="text-xs text-gray-500">
+                          {conversation.last_message_at ? formatDate(conversation.last_message_at) : ''}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-500 truncate">
+                        {conversation.contact_number}
+                      </p>
                     </div>
-                  )}
-                </div>
-              </motion.div>
-            ))}
+                    {conversation.unread_count > 0 && (
+                      <div className="w-5 h-5 bg-whatsapp-green text-white text-xs rounded-full flex items-center justify-center">
+                        {conversation.unread_count}
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              ))
+            )}
           </div>
         </motion.div>
 
@@ -205,23 +218,31 @@ const Messages = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-whatsapp-green rounded-full flex items-center justify-center text-white font-semibold">
-                      {selectedChat.avatar}
+                      {(selectedChat.contact_name || selectedChat.contact_number).charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">{selectedChat.name}</h3>
-                      <p className="text-sm text-gray-500">Online</p>
+                      <h3 className="font-semibold text-gray-900">
+                        {selectedChat.contact_name || selectedChat.contact_number}
+                      </h3>
+                      <p className="text-sm text-gray-500">
+                        {isConnected ? 'Online' : 'Offline'}
+                      </p>
                     </div>
                   </div>
-                  {aiConfig.provider === 'pollinations' && (
-                    <div className="flex items-center space-x-2 text-sm text-pink-600 bg-pink-50 px-3 py-1 rounded-full">
-                      <SafeIcon icon={FiImage} className="text-xs" />
-                      <span>Geração de Imagens Ativa</span>
-                    </div>
-                  )}
-                  {aiConfig.provider === 'pollinations-text' && (
-                    <div className="flex items-center space-x-2 text-sm text-cyan-600 bg-cyan-50 px-3 py-1 rounded-full">
-                      <SafeIcon icon={FiZap} className="text-xs" />
-                      <span>Text AI Ativa</span>
+                  
+                  {aiConfig.autoReply && (
+                    <div className={`flex items-center space-x-2 text-sm px-3 py-1 rounded-full ${
+                      aiConfig.provider === 'pollinations' 
+                        ? 'text-pink-600 bg-pink-50' 
+                        : aiConfig.provider === 'pollinations-text'
+                        ? 'text-cyan-600 bg-cyan-50'
+                        : 'text-purple-600 bg-purple-50'
+                    }`}>
+                      <SafeIcon icon={
+                        aiConfig.provider === 'pollinations' ? FiImage : 
+                        aiConfig.provider === 'pollinations-text' ? FiZap : FiCpu
+                      } className="text-xs" />
+                      <span>Auto-resposta ativa</span>
                     </div>
                   )}
                 </div>
@@ -229,58 +250,59 @@ const Messages = () => {
 
               {/* Messages */}
               <div className="flex-1 p-4 overflow-y-auto space-y-4 min-h-0">
-                {mockMessages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.type === 'incoming' ? 'justify-start' : 'justify-end'}`}
-                  >
-                    <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                      message.type === 'incoming'
-                        ? 'bg-gray-100 text-gray-900'
-                        : message.type === 'ai'
-                        ? 'bg-purple-100 text-purple-900'
-                        : message.type === 'text-ai'
-                        ? 'bg-cyan-100 text-cyan-900'
-                        : 'bg-whatsapp-green text-white'
-                    }`}>
-                      {(message.type === 'ai' || message.type === 'text-ai') && (
-                        <div className="flex items-center space-x-1 mb-1">
-                          <SafeIcon 
-                            icon={
-                              message.isImage ? FiImage : 
-                              message.type === 'text-ai' ? FiZap : FiCpu
-                            } 
-                            className="text-xs" 
-                          />
-                          <span className="text-xs font-medium">
-                            {message.isImage ? 'IA Pollinations' : 
-                             message.type === 'text-ai' ? 'Pollinations Text' : 'IA'}
-                          </span>
-                        </div>
-                      )}
-                      
-                      {message.isImage && message.imageUrl && (
-                        <div className="mb-2">
-                          <img 
-                            src={message.imageUrl} 
-                            alt="Imagem gerada pela IA"
-                            className="max-w-full h-auto rounded-lg border"
-                            loading="lazy"
-                          />
-                        </div>
-                      )}
-                      
-                      <p className="text-sm whitespace-pre-line">{message.message}</p>
-                      <p className={`text-xs mt-1 ${
-                        message.type === 'incoming' ? 'text-gray-500' : 
-                        message.type === 'ai' ? 'text-purple-600' : 
-                        message.type === 'text-ai' ? 'text-cyan-600' : 'text-white/70'
-                      }`}>
-                        {formatTime(message.timestamp)}
-                      </p>
-                    </div>
+                {chatMessages.length === 0 ? (
+                  <div className="text-center text-gray-500 py-8">
+                    <SafeIcon icon={FiMessageSquare} className="text-4xl mx-auto mb-2" />
+                    <p>Nenhuma mensagem ainda</p>
+                    <p className="text-sm">Envie uma mensagem para iniciar a conversa</p>
                   </div>
-                ))}
+                ) : (
+                  chatMessages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex ${message.direction === 'incoming' ? 'justify-start' : 'justify-end'}`}
+                    >
+                      <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                        message.direction === 'incoming'
+                          ? 'bg-gray-100 text-gray-900'
+                          : message.from_name?.includes('AI') || message.from_name?.includes('WhatsApp AI')
+                          ? aiConfig.provider === 'pollinations' 
+                            ? 'bg-pink-100 text-pink-900'
+                            : aiConfig.provider === 'pollinations-text'
+                            ? 'bg-cyan-100 text-cyan-900'
+                            : 'bg-purple-100 text-purple-900'
+                          : 'bg-whatsapp-green text-white'
+                      }`}>
+                        {(message.from_name?.includes('AI') || message.from_name?.includes('WhatsApp AI')) && (
+                          <div className="flex items-center space-x-1 mb-1">
+                            <SafeIcon 
+                              icon={
+                                aiConfig.provider === 'pollinations' ? FiImage : 
+                                aiConfig.provider === 'pollinations-text' ? FiZap : FiCpu
+                              } 
+                              className="text-xs" 
+                            />
+                            <span className="text-xs font-medium">
+                              {aiConfig.provider === 'pollinations' ? 'Pollinations Image' : 
+                               aiConfig.provider === 'pollinations-text' ? 'Pollinations Text' : 'IA Assistant'}
+                            </span>
+                          </div>
+                        )}
+                        
+                        <p className="text-sm whitespace-pre-line">{message.body}</p>
+                        <p className={`text-xs mt-1 ${
+                          message.direction === 'incoming' ? 'text-gray-500' : 
+                          message.from_name?.includes('AI') ? 
+                            aiConfig.provider === 'pollinations' ? 'text-pink-600' :
+                            aiConfig.provider === 'pollinations-text' ? 'text-cyan-600' : 'text-purple-600'
+                          : 'text-white/70'
+                        }`}>
+                          {formatTime(message.timestamp)}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
 
               {/* Message Input */}
@@ -291,32 +313,40 @@ const Messages = () => {
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder={
+                      !isConnected ? "WhatsApp não conectado..." :
                       aiConfig.provider === 'pollinations' 
                         ? "Digite sua mensagem ou descrição para gerar imagem..."
                         : aiConfig.provider === 'pollinations-text'
                         ? "Digite sua mensagem para a IA de texto..."
                         : "Digite sua mensagem..."
                     }
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp-green focus:border-transparent"
+                    disabled={!isConnected}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp-green focus:border-transparent disabled:opacity-50"
                   />
                   <button
                     type="submit"
-                    disabled={!newMessage.trim()}
+                    disabled={!newMessage.trim() || !isConnected || sending}
                     className="p-2 bg-whatsapp-green hover:bg-whatsapp-dark text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <SafeIcon icon={FiSend} className="text-xl" />
                   </button>
                 </div>
-                {aiConfig.provider === 'pollinations' && (
+                
+                {aiConfig.autoReply && isConnected && (
                   <p className="text-xs text-gray-500 mt-2 flex items-center space-x-1">
-                    <SafeIcon icon={FiImage} />
-                    <span>Mensagens serão interpretadas como prompts para geração de imagens</span>
+                    <SafeIcon icon={
+                      aiConfig.provider === 'pollinations' ? FiImage : 
+                      aiConfig.provider === 'pollinations-text' ? FiZap : FiCpu
+                    } />
+                    <span>
+                      Auto-resposta ativa via {aiConfig.provider} • Delay: {aiConfig.responseDelay}ms
+                    </span>
                   </p>
                 )}
-                {aiConfig.provider === 'pollinations-text' && (
-                  <p className="text-xs text-gray-500 mt-2 flex items-center space-x-1">
-                    <SafeIcon icon={FiZap} />
-                    <span>Respostas inteligentes via Pollinations Text API ({aiConfig.pollinationsText?.model})</span>
+                
+                {!isConnected && (
+                  <p className="text-xs text-red-500 mt-2">
+                    Conecte o WhatsApp para enviar mensagens
                   </p>
                 )}
               </form>
