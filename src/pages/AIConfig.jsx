@@ -4,14 +4,15 @@ import SafeIcon from '../common/SafeIcon';
 import * as FiIcons from 'react-icons/fi';
 import { useAI } from '../contexts/AIContext';
 
-const { FiCpu, FiSettings, FiSave, FiEye, FiEyeOff, FiHelpCircle, FiImage, FiPlay } = FiIcons;
+const { FiCpu, FiSettings, FiSave, FiEye, FiEyeOff, FiHelpCircle, FiImage, FiPlay, FiMessageCircle, FiZap } = FiIcons;
 
 const AIConfig = () => {
-  const { aiConfig, aiProviders, updateAIConfig, testPollinationsConnection } = useAI();
+  const { aiConfig, aiProviders, updateAIConfig, testPollinationsConnection, testPollinationsTextAPI } = useAI();
   const [showApiKey, setShowApiKey] = useState(false);
   const [tempConfig, setTempConfig] = useState(aiConfig);
   const [testResult, setTestResult] = useState(null);
   const [testing, setTesting] = useState(false);
+  const [testMessage, setTestMessage] = useState('');
 
   const handleInputChange = (field, value, section = null) => {
     if (section) {
@@ -33,22 +34,28 @@ const AIConfig = () => {
   };
 
   const handleTest = async () => {
-    if (tempConfig.provider === 'pollinations') {
-      setTesting(true);
-      try {
+    setTesting(true);
+    try {
+      if (tempConfig.provider === 'pollinations') {
         const result = await testPollinationsConnection();
         setTestResult(result);
-      } catch (error) {
-        setTestResult({ success: false, error: error.message });
+      } else if (tempConfig.provider === 'pollinations-text') {
+        const message = testMessage || 'Olá, como você pode me ajudar hoje?';
+        const result = await testPollinationsTextAPI(message);
+        setTestResult(result);
+      } else {
+        alert('Teste disponível apenas para Pollinations por enquanto.');
       }
-      setTesting(false);
-    } else {
-      alert('Teste disponível apenas para Pollinations por enquanto.');
+    } catch (error) {
+      setTestResult({ success: false, error: error.message });
     }
+    setTesting(false);
   };
 
   const selectedProvider = aiProviders.find(p => p.id === tempConfig.provider);
   const isPollinationsSelected = tempConfig.provider === 'pollinations';
+  const isPollinationsTextSelected = tempConfig.provider === 'pollinations-text';
+  const isPollinationsProvider = isPollinationsSelected || isPollinationsTextSelected;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -72,7 +79,13 @@ const AIConfig = () => {
         >
           <div className="flex items-center space-x-3 mb-6">
             <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-              <SafeIcon icon={isPollinationsSelected ? FiImage : FiCpu} className="text-purple-600 text-xl" />
+              <SafeIcon 
+                icon={
+                  isPollinationsSelected ? FiImage : 
+                  isPollinationsTextSelected ? FiMessageCircle : FiCpu
+                } 
+                className="text-purple-600 text-xl" 
+              />
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900">Provedor de IA</h3>
@@ -92,7 +105,10 @@ const AIConfig = () => {
               >
                 {aiProviders.map(provider => (
                   <option key={provider.id} value={provider.id}>
-                    {provider.name} {provider.type === 'image' && '🎨'} {!provider.requiresApiKey && '(Gratuito)'}
+                    {provider.name} 
+                    {provider.type === 'image' && ' 🎨'} 
+                    {provider.id === 'pollinations-text' && ' ⚡'}
+                    {!provider.requiresApiKey && ' (Gratuito)'}
                   </option>
                 ))}
               </select>
@@ -106,8 +122,14 @@ const AIConfig = () => {
                 {isPollinationsSelected ? 'Modelo de Imagem' : 'Modelo'}
               </label>
               <select
-                value={tempConfig.model}
-                onChange={(e) => handleInputChange('model', e.target.value)}
+                value={isPollinationsTextSelected ? tempConfig.pollinationsText.model : tempConfig.model}
+                onChange={(e) => {
+                  if (isPollinationsTextSelected) {
+                    handleInputChange('model', e.target.value, 'pollinationsText');
+                  } else {
+                    handleInputChange('model', e.target.value);
+                  }
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp-green focus:border-transparent"
               >
                 {selectedProvider?.models.map(model => (
@@ -167,7 +189,7 @@ const AIConfig = () => {
                   </>
                 ) : (
                   <>
-                    <SafeIcon icon={FiCpu} className="text-xs" />
+                    <SafeIcon icon={isPollinationsTextSelected ? FiMessageCircle : FiCpu} className="text-xs" />
                     <span>Texto</span>
                   </>
                 )}
@@ -175,7 +197,9 @@ const AIConfig = () => {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">Modelo:</span>
-              <span className="text-sm font-medium">{tempConfig.model}</span>
+              <span className="text-sm font-medium">
+                {isPollinationsTextSelected ? tempConfig.pollinationsText.model : tempConfig.model}
+              </span>
             </div>
             {selectedProvider?.requiresApiKey ? (
               <div className="flex items-center justify-between">
@@ -200,7 +224,122 @@ const AIConfig = () => {
         </motion.div>
       </div>
 
-      {/* Pollinations Specific Settings */}
+      {/* Pollinations Text Specific Settings */}
+      {isPollinationsTextSelected && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg shadow-sm p-6 border border-blue-200"
+        >
+          <div className="flex items-center space-x-3 mb-6">
+            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+              <SafeIcon icon={FiZap} className="text-blue-600 text-xl" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Configurações Pollinations Text</h3>
+              <p className="text-sm text-gray-500">Ajustes específicos para IA de texto via Pollinations</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Temperatura ({tempConfig.pollinationsText.temperature})
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={tempConfig.pollinationsText.temperature}
+                  onChange={(e) => handleInputChange('temperature', parseFloat(e.target.value), 'pollinationsText')}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>Mais preciso</span>
+                  <span>Mais criativo</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Máximo de Tokens
+                </label>
+                <input
+                  type="number"
+                  value={tempConfig.pollinationsText.maxTokens}
+                  onChange={(e) => handleInputChange('maxTokens', parseInt(e.target.value), 'pollinationsText')}
+                  min="50"
+                  max="2000"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp-green focus:border-transparent"
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-white/50 rounded-lg">
+                <div>
+                  <label className="font-medium text-gray-900">Usar Prompt do Sistema</label>
+                  <p className="text-sm text-gray-500">Incluir prompt do sistema nas respostas</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={tempConfig.pollinationsText.useSystemPrompt}
+                    onChange={(e) => handleInputChange('useSystemPrompt', e.target.checked, 'pollinationsText')}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-whatsapp-green/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-whatsapp-green"></div>
+                </label>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Prompt Personalizado
+                </label>
+                <textarea
+                  value={tempConfig.pollinationsText.customPrompt}
+                  onChange={(e) => handleInputChange('customPrompt', e.target.value, 'pollinationsText')}
+                  rows={4}
+                  placeholder="Adicione instruções específicas para o modelo..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp-green focus:border-transparent resize-none"
+                />
+                <p className="text-xs text-gray-500 mt-1">Este prompt será adicionado antes da mensagem do usuário</p>
+              </div>
+
+              {testResult && (
+                <div className={`p-4 rounded-lg ${testResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                  <h4 className={`font-medium ${testResult.success ? 'text-green-800' : 'text-red-800'}`}>
+                    {testResult.success ? 'Teste bem-sucedido!' : 'Erro no teste'}
+                  </h4>
+                  {testResult.success && testResult.result?.content && (
+                    <div className="mt-2">
+                      <p className="text-sm text-green-700 font-medium">Resposta gerada:</p>
+                      <div className="mt-1 p-3 bg-white rounded border text-sm text-gray-800">
+                        {testResult.result.content}
+                      </div>
+                      {testResult.result.metadata && (
+                        <div className="mt-2 text-xs text-green-600">
+                          Modelo: {testResult.result.metadata.model} | 
+                          Tokens: {testResult.result.metadata.tokens} | 
+                          Temp: {testResult.result.metadata.temperature}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {!testResult.success && (
+                    <p className="text-sm text-red-700 mt-1">{testResult.error}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Pollinations Image Specific Settings */}
       {isPollinationsSelected && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -213,7 +352,7 @@ const AIConfig = () => {
               <SafeIcon icon={FiImage} className="text-pink-600 text-xl" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">Configurações Pollinations</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Configurações Pollinations Image</h3>
               <p className="text-sm text-gray-500">Ajustes específicos para geração de imagens</p>
             </div>
           </div>
@@ -313,7 +452,7 @@ const AIConfig = () => {
                 </label>
               </div>
 
-              {testResult && (
+              {testResult && isPollinationsSelected && (
                 <div className={`p-4 rounded-lg ${testResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
                   <h4 className={`font-medium ${testResult.success ? 'text-green-800' : 'text-red-800'}`}>
                     {testResult.success ? 'Teste bem-sucedido!' : 'Erro no teste'}
@@ -338,8 +477,8 @@ const AIConfig = () => {
         </motion.div>
       )}
 
-      {/* Advanced Settings */}
-      {!isPollinationsSelected && (
+      {/* Advanced Settings for Non-Pollinations */}
+      {!isPollinationsProvider && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -455,7 +594,13 @@ const AIConfig = () => {
         <div className="flex items-center space-x-4">
           <input
             type="text"
-            placeholder={isPollinationsSelected ? "Digite uma descrição para gerar imagem..." : "Digite uma mensagem de teste..."}
+            value={testMessage}
+            onChange={(e) => setTestMessage(e.target.value)}
+            placeholder={
+              isPollinationsSelected ? "Digite uma descrição para gerar imagem..." : 
+              isPollinationsTextSelected ? "Digite uma mensagem para testar a IA de texto..." :
+              "Digite uma mensagem de teste..."
+            }
             className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp-green focus:border-transparent"
           />
           <button 
@@ -476,20 +621,33 @@ const AIConfig = () => {
             ) : (
               <>
                 <SafeIcon icon={FiPlay} />
-                <span>Testar {isPollinationsSelected ? 'Imagem' : 'IA'}</span>
+                <span>
+                  Testar {isPollinationsSelected ? 'Imagem' : isPollinationsTextSelected ? 'Texto' : 'IA'}
+                </span>
               </>
             )}
           </button>
         </div>
         
-        {isPollinationsSelected && (
+        {isPollinationsProvider && (
           <div className="mt-4 p-4 bg-blue-50 rounded-lg">
             <h4 className="font-medium text-blue-900 mb-2">💡 Dicas para Pollinations:</h4>
             <ul className="text-sm text-blue-800 space-y-1">
-              <li>• Use descrições detalhadas em inglês para melhores resultados</li>
-              <li>• Experimente diferentes modelos: flux (padrão), flux-realism, flux-anime</li>
-              <li>• Ajuste as dimensões conforme necessário (recomendado: 1024x1024)</li>
-              <li>• O serviço é gratuito e não requer chave de API</li>
+              {isPollinationsSelected ? (
+                <>
+                  <li>• Use descrições detalhadas em inglês para melhores resultados</li>
+                  <li>• Experimente diferentes modelos: flux (padrão), flux-realism, flux-anime</li>
+                  <li>• Ajuste as dimensões conforme necessário (recomendado: 1024x1024)</li>
+                  <li>• O serviço é gratuito e não requer chave de API</li>
+                </>
+              ) : (
+                <>
+                  <li>• Experimente diferentes modelos: openai, mistral, claude</li>
+                  <li>• Ajuste a temperatura para controlar criatividade</li>
+                  <li>• Use prompts personalizados para comportamentos específicos</li>
+                  <li>• Totalmente gratuito via text.pollinations.ai</li>
+                </>
+              )}
             </ul>
           </div>
         )}

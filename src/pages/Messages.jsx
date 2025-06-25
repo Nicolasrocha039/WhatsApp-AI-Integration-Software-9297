@@ -7,7 +7,7 @@ import { useAI } from '../contexts/AIContext';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
-const { FiMessageSquare, FiSend, FiUser, FiCpu, FiSearch, FiFilter, FiImage } = FiIcons;
+const { FiMessageSquare, FiSend, FiUser, FiCpu, FiSearch, FiFilter, FiImage, FiZap } = FiIcons;
 
 const Messages = () => {
   const { messages, sendMessage } = useWhatsApp();
@@ -45,7 +45,7 @@ const Messages = () => {
     {
       id: 4,
       name: 'Ana Costa',
-      lastMessage: 'Gere uma imagem de um gato fofo',
+      lastMessage: aiConfig.provider === 'pollinations-text' ? 'Como funciona a IA de texto?' : 'Gere uma imagem de um gato fofo',
       timestamp: new Date(Date.now() - 900000),
       unread: 0,
       avatar: 'AC'
@@ -63,30 +63,38 @@ const Messages = () => {
     {
       id: 2,
       sender: 'IA Assistant',
-      message: 'Olá! Claro, posso ajudá-lo com seu pedido. Pode me fornecer o número do pedido?',
+      message: aiConfig.provider === 'pollinations-text' 
+        ? 'Olá! Como assistente IA via Pollinations Text, posso ajudá-lo com seu pedido usando modelos avançados de linguagem. Pode me fornecer o número do pedido?'
+        : 'Olá! Claro, posso ajudá-lo com seu pedido. Pode me fornecer o número do pedido?',
       timestamp: new Date(Date.now() - 870000),
-      type: 'ai'
+      type: aiConfig.provider === 'pollinations-text' ? 'text-ai' : 'ai'
     },
     {
       id: 3,
       sender: 'Ana Costa',
-      message: 'Gere uma imagem de um gato fofo brincando no jardim',
+      message: aiConfig.provider === 'pollinations-text' 
+        ? 'Como funciona a IA de texto da Pollinations? Quais modelos estão disponíveis?'
+        : 'Gere uma imagem de um gato fofo brincando no jardim',
       timestamp: new Date(Date.now() - 600000),
       type: 'incoming'
     },
     {
       id: 4,
       sender: 'IA Assistant',
-      message: 'Imagem gerada com sucesso! 🎨\n\nPrompt: "Gere uma imagem de um gato fofo brincando no jardim"\nModelo: flux',
+      message: aiConfig.provider === 'pollinations-text'
+        ? 'Utilizando Pollinations Text API, temos acesso a múltiplos modelos de IA:\n\n• OpenAI: Modelo versátil e preciso\n• Mistral: IA francesa com excelente performance\n• Claude: Assistente thoughtful da Anthropic\n\nTodos gratuitos via text.pollinations.ai! 🚀'
+        : aiConfig.provider === 'pollinations'
+        ? 'Imagem gerada com sucesso! 🎨\n\nPrompt: "Gere uma imagem de um gato fofo brincando no jardim"\nModelo: flux'
+        : 'Claro! Vou processar sua solicitação.',
       timestamp: new Date(Date.now() - 590000),
-      type: 'ai',
-      imageUrl: 'https://image.pollinations.ai/prompt/high%20quality,%20detailed,%20cute%20cat%20playing%20in%20garden?model=flux&width=1024&height=1024&seed=123456',
-      isImage: true
+      type: aiConfig.provider === 'pollinations-text' ? 'text-ai' : aiConfig.provider === 'pollinations' ? 'ai' : 'ai',
+      imageUrl: aiConfig.provider === 'pollinations' ? 'https://image.pollinations.ai/prompt/high%20quality,%20detailed,%20cute%20cat%20playing%20in%20garden?model=flux&width=1024&height=1024&seed=123456' : null,
+      isImage: aiConfig.provider === 'pollinations'
     },
     {
       id: 5,
       sender: 'Ana Costa',
-      message: 'Perfeita! Obrigada!',
+      message: aiConfig.provider === 'pollinations-text' ? 'Incrível! Vou testar.' : 'Perfeita! Obrigada!',
       timestamp: new Date(Date.now() - 300000),
       type: 'incoming'
     }
@@ -202,9 +210,15 @@ const Messages = () => {
                     </div>
                   </div>
                   {aiConfig.provider === 'pollinations' && (
-                    <div className="flex items-center space-x-2 text-sm text-purple-600 bg-purple-50 px-3 py-1 rounded-full">
+                    <div className="flex items-center space-x-2 text-sm text-pink-600 bg-pink-50 px-3 py-1 rounded-full">
                       <SafeIcon icon={FiImage} className="text-xs" />
                       <span>Geração de Imagens Ativa</span>
+                    </div>
+                  )}
+                  {aiConfig.provider === 'pollinations-text' && (
+                    <div className="flex items-center space-x-2 text-sm text-cyan-600 bg-cyan-50 px-3 py-1 rounded-full">
+                      <SafeIcon icon={FiZap} className="text-xs" />
+                      <span>Text AI Ativa</span>
                     </div>
                   )}
                 </div>
@@ -222,13 +236,22 @@ const Messages = () => {
                         ? 'bg-gray-100 text-gray-900'
                         : message.type === 'ai'
                         ? 'bg-purple-100 text-purple-900'
+                        : message.type === 'text-ai'
+                        ? 'bg-cyan-100 text-cyan-900'
                         : 'bg-whatsapp-green text-white'
                     }`}>
-                      {message.type === 'ai' && (
+                      {(message.type === 'ai' || message.type === 'text-ai') && (
                         <div className="flex items-center space-x-1 mb-1">
-                          <SafeIcon icon={message.isImage ? FiImage : FiCpu} className="text-xs" />
+                          <SafeIcon 
+                            icon={
+                              message.isImage ? FiImage : 
+                              message.type === 'text-ai' ? FiZap : FiCpu
+                            } 
+                            className="text-xs" 
+                          />
                           <span className="text-xs font-medium">
-                            {message.isImage ? 'IA Pollinations' : 'IA'}
+                            {message.isImage ? 'IA Pollinations' : 
+                             message.type === 'text-ai' ? 'Pollinations Text' : 'IA'}
                           </span>
                         </div>
                       )}
@@ -247,7 +270,8 @@ const Messages = () => {
                       <p className="text-sm whitespace-pre-line">{message.message}</p>
                       <p className={`text-xs mt-1 ${
                         message.type === 'incoming' ? 'text-gray-500' : 
-                        message.type === 'ai' ? 'text-purple-600' : 'text-white/70'
+                        message.type === 'ai' ? 'text-purple-600' : 
+                        message.type === 'text-ai' ? 'text-cyan-600' : 'text-white/70'
                       }`}>
                         {format(message.timestamp, 'HH:mm', { locale: ptBR })}
                       </p>
@@ -266,6 +290,8 @@ const Messages = () => {
                     placeholder={
                       aiConfig.provider === 'pollinations' 
                         ? "Digite sua mensagem ou descrição para gerar imagem..."
+                        : aiConfig.provider === 'pollinations-text'
+                        ? "Digite sua mensagem para a IA de texto..."
                         : "Digite sua mensagem..."
                     }
                     className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp-green focus:border-transparent"
@@ -282,6 +308,12 @@ const Messages = () => {
                   <p className="text-xs text-gray-500 mt-2 flex items-center space-x-1">
                     <SafeIcon icon={FiImage} />
                     <span>Mensagens serão interpretadas como prompts para geração de imagens</span>
+                  </p>
+                )}
+                {aiConfig.provider === 'pollinations-text' && (
+                  <p className="text-xs text-gray-500 mt-2 flex items-center space-x-1">
+                    <SafeIcon icon={FiZap} />
+                    <span>Respostas inteligentes via Pollinations Text API ({aiConfig.pollinationsText?.model})</span>
                   </p>
                 )}
               </form>

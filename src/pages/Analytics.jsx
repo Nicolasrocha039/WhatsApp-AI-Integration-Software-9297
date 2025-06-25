@@ -5,16 +5,19 @@ import * as FiIcons from 'react-icons/fi';
 import ReactECharts from 'echarts-for-react';
 import { useAI } from '../contexts/AIContext';
 
-const { FiBarChart3, FiTrendingUp, FiMessageSquare, FiClock, FiUsers, FiCpu, FiImage } = FiIcons;
+const { FiBarChart3, FiTrendingUp, FiMessageSquare, FiClock, FiUsers, FiCpu, FiImage, FiZap } = FiIcons;
 
 const Analytics = () => {
   const { aiConfig } = useAI();
-  const isPollinationsActive = aiConfig.provider === 'pollinations';
+  const isPollinationsImageActive = aiConfig.provider === 'pollinations';
+  const isPollinationsTextActive = aiConfig.provider === 'pollinations-text';
+  const isPollinationsProvider = isPollinationsImageActive || isPollinationsTextActive;
 
   // Configuração do gráfico de mensagens por hora
   const messagesChartOption = {
     title: {
-      text: isPollinationsActive ? 'Atividade por Hora' : 'Mensagens por Hora',
+      text: isPollinationsImageActive ? 'Atividade por Hora' : 
+            isPollinationsTextActive ? 'Respostas IA por Hora' : 'Mensagens por Hora',
       left: 'center'
     },
     tooltip: {
@@ -36,15 +39,22 @@ const Analytics = () => {
         itemStyle: { color: '#25D366' }
       },
       {
-        name: isPollinationsActive ? 'Imagens Geradas' : 'Respostas IA',
+        name: isPollinationsImageActive ? 'Imagens Geradas' : 
+              isPollinationsTextActive ? 'Respostas Text AI' : 'Respostas IA',
         type: 'line',
-        data: isPollinationsActive ? [8, 4, 15, 28, 22, 14] : [10, 6, 20, 38, 32, 18],
+        data: isPollinationsImageActive ? [8, 4, 15, 28, 22, 14] : 
+              isPollinationsTextActive ? [15, 10, 30, 52, 41, 28] : [10, 6, 20, 38, 32, 18],
         smooth: true,
-        itemStyle: { color: isPollinationsActive ? '#EC4899' : '#8B5CF6' }
+        itemStyle: { 
+          color: isPollinationsImageActive ? '#EC4899' : 
+                 isPollinationsTextActive ? '#06B6D4' : '#8B5CF6' 
+        }
       }
     ],
     legend: {
-      data: ['Mensagens Recebidas', isPollinationsActive ? 'Imagens Geradas' : 'Respostas IA'],
+      data: ['Mensagens Recebidas', 
+             isPollinationsImageActive ? 'Imagens Geradas' : 
+             isPollinationsTextActive ? 'Respostas Text AI' : 'Respostas IA'],
       bottom: 0
     }
   };
@@ -52,7 +62,8 @@ const Analytics = () => {
   // Configuração do gráfico de tipos de resposta
   const responseTypesOption = {
     title: {
-      text: isPollinationsActive ? 'Tipos de Conteúdo' : 'Tipos de Resposta',
+      text: isPollinationsImageActive ? 'Tipos de Conteúdo' : 
+            isPollinationsTextActive ? 'Modelos Utilizados' : 'Tipos de Resposta',
       left: 'center'
     },
     tooltip: {
@@ -63,11 +74,15 @@ const Analytics = () => {
         name: 'Tipos',
         type: 'pie',
         radius: '60%',
-        data: isPollinationsActive ? [
+        data: isPollinationsImageActive ? [
           { value: 45, name: 'Imagens Geradas' },
           { value: 35, name: 'Mensagens de Texto' },
           { value: 15, name: 'Comandos de Sistema' },
           { value: 5, name: 'Erros' }
+        ] : isPollinationsTextActive ? [
+          { value: 45, name: 'OpenAI' },
+          { value: 35, name: 'Mistral' },
+          { value: 20, name: 'Claude' }
         ] : [
           { value: 65, name: 'IA Automática' },
           { value: 25, name: 'Manual' },
@@ -94,17 +109,25 @@ const Analytics = () => {
       bg: 'bg-blue-100'
     },
     {
-      title: isPollinationsActive ? 'Imagens Geradas' : 'Respostas da IA',
-      value: isPollinationsActive ? '342' : '892',
-      change: isPollinationsActive ? '+45%' : '+31%',
-      icon: isPollinationsActive ? FiImage : FiCpu,
-      color: isPollinationsActive ? 'text-pink-600' : 'text-purple-600',
-      bg: isPollinationsActive ? 'bg-pink-100' : 'bg-purple-100'
+      title: isPollinationsImageActive ? 'Imagens Geradas' : 
+             isPollinationsTextActive ? 'Respostas Text AI' : 'Respostas da IA',
+      value: isPollinationsImageActive ? '342' : 
+             isPollinationsTextActive ? '1,156' : '892',
+      change: isPollinationsImageActive ? '+45%' : 
+              isPollinationsTextActive ? '+67%' : '+31%',
+      icon: isPollinationsImageActive ? FiImage : 
+            isPollinationsTextActive ? FiZap : FiCpu,
+      color: isPollinationsImageActive ? 'text-pink-600' : 
+             isPollinationsTextActive ? 'text-cyan-600' : 'text-purple-600',
+      bg: isPollinationsImageActive ? 'bg-pink-100' : 
+          isPollinationsTextActive ? 'bg-cyan-100' : 'bg-purple-100'
     },
     {
       title: 'Tempo Médio de Resposta',
-      value: isPollinationsActive ? '8.5s' : '2.3s',
-      change: isPollinationsActive ? '+5%' : '-12%',
+      value: isPollinationsImageActive ? '8.5s' : 
+             isPollinationsTextActive ? '1.8s' : '2.3s',
+      change: isPollinationsImageActive ? '+5%' : 
+              isPollinationsTextActive ? '-25%' : '-12%',
       icon: FiClock,
       color: 'text-green-600',
       bg: 'bg-green-100'
@@ -119,12 +142,18 @@ const Analytics = () => {
     }
   ];
 
-  const topQuestions = isPollinationsActive ? [
+  const topQuestions = isPollinationsImageActive ? [
     { question: 'Gere uma imagem de paisagem', count: 67 },
     { question: 'Crie um retrato artístico', count: 54 },
     { question: 'Desenhe um animal fofo', count: 43 },
     { question: 'Faça uma logo moderna', count: 38 },
     { question: 'Crie uma ilustração fantasy', count: 29 }
+  ] : isPollinationsTextActive ? [
+    { question: 'Como posso ajudá-lo?', count: 89 },
+    { question: 'Explique este conceito', count: 67 },
+    { question: 'Qual a diferença entre...', count: 54 },
+    { question: 'Como resolver este problema', count: 43 },
+    { question: 'Dê-me sugestões sobre', count: 38 }
   ] : [
     { question: 'Como rastrear meu pedido?', count: 45 },
     { question: 'Qual o prazo de entrega?', count: 38 },
@@ -138,10 +167,16 @@ const Analytics = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
-          {isPollinationsActive && (
+          {isPollinationsImageActive && (
             <div className="flex items-center space-x-2 bg-pink-100 text-pink-800 px-3 py-1 rounded-full text-sm">
               <SafeIcon icon={FiImage} />
-              <span>Pollinations Ativo</span>
+              <span>Pollinations Image Ativo</span>
+            </div>
+          )}
+          {isPollinationsTextActive && (
+            <div className="flex items-center space-x-2 bg-cyan-100 text-cyan-800 px-3 py-1 rounded-full text-sm">
+              <SafeIcon icon={FiZap} />
+              <span>Pollinations Text Ativo</span>
             </div>
           )}
         </div>
@@ -155,29 +190,56 @@ const Analytics = () => {
       </div>
 
       {/* Pollinations Performance Banner */}
-      {isPollinationsActive && (
+      {isPollinationsProvider && (
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 rounded-lg p-6 text-white"
+          className={`rounded-lg p-6 text-white ${
+            isPollinationsImageActive 
+              ? 'bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500'
+              : 'bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500'
+          }`}
         >
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold">342</div>
-              <div className="text-sm opacity-90">Imagens Geradas</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold">8.5s</div>
-              <div className="text-sm opacity-90">Tempo Médio</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold">98.2%</div>
-              <div className="text-sm opacity-90">Taxa de Sucesso</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold">1024x1024</div>
-              <div className="text-sm opacity-90">Resolução Padrão</div>
-            </div>
+            {isPollinationsImageActive ? (
+              <>
+                <div className="text-center">
+                  <div className="text-2xl font-bold">342</div>
+                  <div className="text-sm opacity-90">Imagens Geradas</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold">8.5s</div>
+                  <div className="text-sm opacity-90">Tempo Médio</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold">98.2%</div>
+                  <div className="text-sm opacity-90">Taxa de Sucesso</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold">1024x1024</div>
+                  <div className="text-sm opacity-90">Resolução Padrão</div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-center">
+                  <div className="text-2xl font-bold">1,156</div>
+                  <div className="text-sm opacity-90">Respostas Geradas</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold">1.8s</div>
+                  <div className="text-sm opacity-90">Tempo Médio</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold">99.1%</div>
+                  <div className="text-sm opacity-90">Taxa de Sucesso</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold">{aiConfig.pollinationsText?.model?.toUpperCase()}</div>
+                  <div className="text-sm opacity-90">Modelo Ativo</div>
+                </div>
+              </>
+            )}
           </div>
         </motion.div>
       )}
@@ -239,16 +301,24 @@ const Analytics = () => {
         >
           <div className="flex items-center space-x-3 mb-6">
             <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-              isPollinationsActive ? 'bg-pink-100' : 'bg-blue-100'
+              isPollinationsImageActive ? 'bg-pink-100' : 
+              isPollinationsTextActive ? 'bg-cyan-100' : 'bg-blue-100'
             }`}>
               <SafeIcon 
-                icon={isPollinationsActive ? FiImage : FiBarChart3} 
-                className={`text-xl ${isPollinationsActive ? 'text-pink-600' : 'text-blue-600'}`} 
+                icon={
+                  isPollinationsImageActive ? FiImage : 
+                  isPollinationsTextActive ? FiZap : FiBarChart3
+                } 
+                className={`text-xl ${
+                  isPollinationsImageActive ? 'text-pink-600' : 
+                  isPollinationsTextActive ? 'text-cyan-600' : 'text-blue-600'
+                }`} 
               />
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900">
-                {isPollinationsActive ? 'Prompts Mais Populares' : 'Perguntas Mais Frequentes'}
+                {isPollinationsImageActive ? 'Prompts Mais Populares' : 
+                 isPollinationsTextActive ? 'Perguntas Mais Frequentes' : 'Perguntas Mais Frequentes'}
               </h3>
               <p className="text-sm text-gray-500">Baseado nas últimas interações</p>
             </div>
@@ -259,7 +329,8 @@ const Analytics = () => {
               <div key={index} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors">
                 <div className="flex items-center space-x-3">
                   <span className={`flex items-center justify-center w-6 h-6 text-white text-xs font-medium rounded-full ${
-                    isPollinationsActive ? 'bg-pink-500' : 'bg-gray-500'
+                    isPollinationsImageActive ? 'bg-pink-500' : 
+                    isPollinationsTextActive ? 'bg-cyan-500' : 'bg-gray-500'
                   }`}>
                     {index + 1}
                   </span>
@@ -283,7 +354,8 @@ const Analytics = () => {
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900">
-                Performance {isPollinationsActive ? 'do Pollinations' : 'da IA'}
+                Performance {isPollinationsImageActive ? 'do Pollinations Image' : 
+                          isPollinationsTextActive ? 'do Pollinations Text' : 'da IA'}
               </h3>
               <p className="text-sm text-gray-500">Métricas de eficiência</p>
             </div>
@@ -294,9 +366,15 @@ const Analytics = () => {
               <span className="text-sm text-gray-600">Taxa de Sucesso</span>
               <div className="flex items-center space-x-2">
                 <div className="w-32 bg-gray-200 rounded-full h-2">
-                  <div className="bg-green-500 h-2 rounded-full" style={{ width: isPollinationsActive ? '98%' : '94%' }}></div>
+                  <div className="bg-green-500 h-2 rounded-full" style={{ 
+                    width: isPollinationsImageActive ? '98%' : 
+                           isPollinationsTextActive ? '99%' : '94%' 
+                  }}></div>
                 </div>
-                <span className="text-sm font-medium text-gray-900">{isPollinationsActive ? '98%' : '94%'}</span>
+                <span className="text-sm font-medium text-gray-900">
+                  {isPollinationsImageActive ? '98%' : 
+                   isPollinationsTextActive ? '99%' : '94%'}
+                </span>
               </div>
             </div>
 
@@ -304,21 +382,37 @@ const Analytics = () => {
               <span className="text-sm text-gray-600">Satisfação do Cliente</span>
               <div className="flex items-center space-x-2">
                 <div className="w-32 bg-gray-200 rounded-full h-2">
-                  <div className="bg-blue-500 h-2 rounded-full" style={{ width: isPollinationsActive ? '92%' : '88%' }}></div>
+                  <div className="bg-blue-500 h-2 rounded-full" style={{ 
+                    width: isPollinationsImageActive ? '92%' : 
+                           isPollinationsTextActive ? '95%' : '88%' 
+                  }}></div>
                 </div>
-                <span className="text-sm font-medium text-gray-900">{isPollinationsActive ? '92%' : '88%'}</span>
+                <span className="text-sm font-medium text-gray-900">
+                  {isPollinationsImageActive ? '92%' : 
+                   isPollinationsTextActive ? '95%' : '88%'}
+                </span>
               </div>
             </div>
 
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600">
-                {isPollinationsActive ? 'Qualidade das Imagens' : 'Precisão das Respostas'}
+                {isPollinationsImageActive ? 'Qualidade das Imagens' : 
+                 isPollinationsTextActive ? 'Precisão das Respostas' : 'Precisão das Respostas'}
               </span>
               <div className="flex items-center space-x-2">
                 <div className="w-32 bg-gray-200 rounded-full h-2">
-                  <div className={`h-2 rounded-full ${isPollinationsActive ? 'bg-pink-500' : 'bg-purple-500'}`} style={{ width: isPollinationsActive ? '96%' : '92%' }}></div>
+                  <div className={`h-2 rounded-full ${
+                    isPollinationsImageActive ? 'bg-pink-500' : 
+                    isPollinationsTextActive ? 'bg-cyan-500' : 'bg-purple-500'
+                  }`} style={{ 
+                    width: isPollinationsImageActive ? '96%' : 
+                           isPollinationsTextActive ? '97%' : '92%' 
+                  }}></div>
                 </div>
-                <span className="text-sm font-medium text-gray-900">{isPollinationsActive ? '96%' : '92%'}</span>
+                <span className="text-sm font-medium text-gray-900">
+                  {isPollinationsImageActive ? '96%' : 
+                   isPollinationsTextActive ? '97%' : '92%'}
+                </span>
               </div>
             </div>
 
@@ -326,21 +420,44 @@ const Analytics = () => {
               <span className="text-sm text-gray-600">Economia de Tempo</span>
               <div className="flex items-center space-x-2">
                 <div className="w-32 bg-gray-200 rounded-full h-2">
-                  <div className="bg-orange-500 h-2 rounded-full" style={{ width: isPollinationsActive ? '85%' : '76%' }}></div>
+                  <div className="bg-orange-500 h-2 rounded-full" style={{ 
+                    width: isPollinationsImageActive ? '85%' : 
+                           isPollinationsTextActive ? '92%' : '76%' 
+                  }}></div>
                 </div>
-                <span className="text-sm font-medium text-gray-900">{isPollinationsActive ? '85%' : '76%'}</span>
+                <span className="text-sm font-medium text-gray-900">
+                  {isPollinationsImageActive ? '85%' : 
+                   isPollinationsTextActive ? '92%' : '76%'}
+                </span>
               </div>
             </div>
           </div>
 
-          {isPollinationsActive && (
-            <div className="mt-6 p-4 bg-pink-50 rounded-lg border border-pink-200">
-              <h4 className="font-medium text-pink-900 mb-2">Configurações Ativas:</h4>
-              <div className="text-sm text-pink-800 space-y-1">
-                <div>Modelo: {aiConfig.model}</div>
-                <div>Dimensões: {aiConfig.pollinations?.imageWidth}x{aiConfig.pollinations?.imageHeight}</div>
-                <div>Estilo: {aiConfig.pollinations?.imageStyle}</div>
-                <div>Prefixo: {aiConfig.pollinations?.imagePromptPrefix}</div>
+          {isPollinationsProvider && (
+            <div className={`mt-6 p-4 rounded-lg border ${
+              isPollinationsImageActive ? 'bg-pink-50 border-pink-200' : 'bg-cyan-50 border-cyan-200'
+            }`}>
+              <h4 className={`font-medium mb-2 ${
+                isPollinationsImageActive ? 'text-pink-900' : 'text-cyan-900'
+              }`}>Configurações Ativas:</h4>
+              <div className={`text-sm space-y-1 ${
+                isPollinationsImageActive ? 'text-pink-800' : 'text-cyan-800'
+              }`}>
+                {isPollinationsImageActive ? (
+                  <>
+                    <div>Modelo: {aiConfig.model}</div>
+                    <div>Dimensões: {aiConfig.pollinations?.imageWidth}x{aiConfig.pollinations?.imageHeight}</div>
+                    <div>Estilo: {aiConfig.pollinations?.imageStyle}</div>
+                    <div>Prefixo: {aiConfig.pollinations?.imagePromptPrefix}</div>
+                  </>
+                ) : (
+                  <>
+                    <div>Modelo: {aiConfig.pollinationsText?.model}</div>
+                    <div>Tokens: {aiConfig.pollinationsText?.maxTokens}</div>
+                    <div>Temperatura: {aiConfig.pollinationsText?.temperature}</div>
+                    <div>Sistema: {aiConfig.pollinationsText?.useSystemPrompt ? 'Ativo' : 'Inativo'}</div>
+                  </>
+                )}
               </div>
             </div>
           )}

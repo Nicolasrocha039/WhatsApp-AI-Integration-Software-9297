@@ -5,7 +5,7 @@ import * as FiIcons from 'react-icons/fi';
 import { useWhatsApp } from '../contexts/WhatsAppContext';
 import { useAI } from '../contexts/AIContext';
 
-const { FiMessageSquare, FiUsers, FiCpu, FiTrendingUp, FiActivity, FiClock, FiImage } = FiIcons;
+const { FiMessageSquare, FiUsers, FiCpu, FiTrendingUp, FiActivity, FiClock, FiImage, FiZap } = FiIcons;
 
 const Dashboard = () => {
   const { isConnected, messages } = useWhatsApp();
@@ -27,11 +27,15 @@ const Dashboard = () => {
       color: 'bg-green-500'
     },
     {
-      title: aiConfig.provider === 'pollinations' ? 'Imagens Geradas' : 'Respostas IA',
-      value: aiConfig.provider === 'pollinations' ? '34' : '89',
+      title: aiConfig.provider === 'pollinations' ? 'Imagens Geradas' : 
+             aiConfig.provider === 'pollinations-text' ? 'Respostas IA Text' : 'Respostas IA',
+      value: aiConfig.provider === 'pollinations' ? '34' : 
+             aiConfig.provider === 'pollinations-text' ? '156' : '89',
       change: '+18%',
-      icon: aiConfig.provider === 'pollinations' ? FiImage : FiCpu,
-      color: aiConfig.provider === 'pollinations' ? 'bg-pink-500' : 'bg-purple-500'
+      icon: aiConfig.provider === 'pollinations' ? FiImage : 
+            aiConfig.provider === 'pollinations-text' ? FiZap : FiCpu,
+      color: aiConfig.provider === 'pollinations' ? 'bg-pink-500' : 
+             aiConfig.provider === 'pollinations-text' ? 'bg-cyan-500' : 'bg-purple-500'
     },
     {
       title: 'Taxa de Resposta',
@@ -45,16 +49,22 @@ const Dashboard = () => {
   const recentActivity = [
     { type: 'message', user: 'João Silva', action: 'enviou uma mensagem', time: '2 min atrás' },
     { 
-      type: aiConfig.provider === 'pollinations' ? 'image' : 'ai', 
-      user: aiConfig.provider === 'pollinations' ? 'Pollinations AI' : 'IA Assistant', 
-      action: aiConfig.provider === 'pollinations' ? 'gerou uma imagem' : 'respondeu automaticamente', 
+      type: aiConfig.provider === 'pollinations' ? 'image' : 
+            aiConfig.provider === 'pollinations-text' ? 'text-ai' : 'ai',
+      user: aiConfig.provider === 'pollinations' ? 'Pollinations Image' : 
+            aiConfig.provider === 'pollinations-text' ? 'Pollinations Text' : 'IA Assistant',
+      action: aiConfig.provider === 'pollinations' ? 'gerou uma imagem' : 
+              aiConfig.provider === 'pollinations-text' ? 'respondeu via Text API' : 'respondeu automaticamente',
       time: '5 min atrás' 
     },
     { type: 'message', user: 'Maria Santos', action: 'iniciou uma conversa', time: '10 min atrás' },
     { 
-      type: aiConfig.provider === 'pollinations' ? 'image' : 'ai', 
-      user: aiConfig.provider === 'pollinations' ? 'Pollinations AI' : 'IA Assistant', 
-      action: aiConfig.provider === 'pollinations' ? 'processou 2 solicitações de imagem' : 'processou 3 mensagens', 
+      type: aiConfig.provider === 'pollinations' ? 'image' : 
+            aiConfig.provider === 'pollinations-text' ? 'text-ai' : 'ai',
+      user: aiConfig.provider === 'pollinations' ? 'Pollinations Image' : 
+            aiConfig.provider === 'pollinations-text' ? 'Pollinations Text' : 'IA Assistant',
+      action: aiConfig.provider === 'pollinations' ? 'processou 2 solicitações de imagem' : 
+              aiConfig.provider === 'pollinations-text' ? 'processou 4 mensagens de texto' : 'processou 3 mensagens',
       time: '15 min atrás' 
     }
   ];
@@ -62,10 +72,18 @@ const Dashboard = () => {
   const getProviderStatus = () => {
     if (aiConfig.provider === 'pollinations') {
       return {
-        name: 'Pollinations AI',
+        name: 'Pollinations Image AI',
         status: 'Ativo',
         color: 'text-pink-600',
         bgColor: 'bg-pink-500'
+      };
+    }
+    if (aiConfig.provider === 'pollinations-text') {
+      return {
+        name: 'Pollinations Text AI',
+        status: 'Ativo',
+        color: 'text-cyan-600',
+        bgColor: 'bg-cyan-500'
       };
     }
     return {
@@ -89,17 +107,28 @@ const Dashboard = () => {
       </div>
 
       {/* Pollinations Banner */}
-      {aiConfig.provider === 'pollinations' && (
+      {(aiConfig.provider === 'pollinations' || aiConfig.provider === 'pollinations-text') && (
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 rounded-lg p-4 text-white"
+          className={`rounded-lg p-4 text-white ${
+            aiConfig.provider === 'pollinations' 
+              ? 'bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500'
+              : 'bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500'
+          }`}
         >
           <div className="flex items-center space-x-3">
-            <SafeIcon icon={FiImage} className="text-2xl" />
+            <SafeIcon icon={aiConfig.provider === 'pollinations' ? FiImage : FiZap} className="text-2xl" />
             <div>
-              <h3 className="font-semibold">Pollinations AI Ativo</h3>
-              <p className="text-sm opacity-90">Geração gratuita de imagens com IA está ativada. Suas mensagens serão interpretadas como prompts para criação de imagens.</p>
+              <h3 className="font-semibold">
+                {aiConfig.provider === 'pollinations' ? 'Pollinations Image AI Ativo' : 'Pollinations Text AI Ativo'}
+              </h3>
+              <p className="text-sm opacity-90">
+                {aiConfig.provider === 'pollinations' 
+                  ? 'Geração gratuita de imagens com IA está ativada. Suas mensagens serão interpretadas como prompts para criação de imagens.'
+                  : 'IA de texto gratuita via Pollinations está ativa. Respostas inteligentes usando modelos OpenAI, Mistral e Claude.'
+                }
+              </p>
             </div>
           </div>
         </motion.div>
@@ -154,6 +183,7 @@ const Dashboard = () => {
                 <span className="font-medium flex items-center space-x-2">
                   <span>{providerInfo.name}</span>
                   {aiConfig.provider === 'pollinations' && <SafeIcon icon={FiImage} className="text-sm text-pink-600" />}
+                  {aiConfig.provider === 'pollinations-text' && <SafeIcon icon={FiZap} className="text-sm text-cyan-600" />}
                 </span>
               </div>
               <span className={`text-sm font-medium ${providerInfo.color}`}>
@@ -165,12 +195,27 @@ const Dashboard = () => {
               <div className="p-4 bg-pink-50 rounded-lg border border-pink-200">
                 <div className="flex items-center space-x-2 mb-2">
                   <SafeIcon icon={FiImage} className="text-pink-600" />
-                  <span className="font-medium text-pink-800">Configurações Pollinations</span>
+                  <span className="font-medium text-pink-800">Configurações Pollinations Image</span>
                 </div>
                 <div className="text-sm text-pink-700 space-y-1">
                   <div>Modelo: {aiConfig.model}</div>
                   <div>Dimensões: {aiConfig.pollinations?.imageWidth}x{aiConfig.pollinations?.imageHeight}</div>
                   <div>Geração: {aiConfig.pollinations?.enableImageGeneration ? 'Ativa' : 'Inativa'}</div>
+                </div>
+              </div>
+            )}
+
+            {aiConfig.provider === 'pollinations-text' && (
+              <div className="p-4 bg-cyan-50 rounded-lg border border-cyan-200">
+                <div className="flex items-center space-x-2 mb-2">
+                  <SafeIcon icon={FiZap} className="text-cyan-600" />
+                  <span className="font-medium text-cyan-800">Configurações Pollinations Text</span>
+                </div>
+                <div className="text-sm text-cyan-700 space-y-1">
+                  <div>Modelo: {aiConfig.pollinationsText?.model}</div>
+                  <div>Tokens: {aiConfig.pollinationsText?.maxTokens}</div>
+                  <div>Temperatura: {aiConfig.pollinationsText?.temperature}</div>
+                  <div>Sistema: {aiConfig.pollinationsText?.useSystemPrompt ? 'Ativo' : 'Inativo'}</div>
                 </div>
               </div>
             )}
@@ -189,16 +234,19 @@ const Dashboard = () => {
               <div key={index} className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                   activity.type === 'ai' ? 'bg-purple-100' : 
-                  activity.type === 'image' ? 'bg-pink-100' : 'bg-blue-100'
+                  activity.type === 'image' ? 'bg-pink-100' : 
+                  activity.type === 'text-ai' ? 'bg-cyan-100' : 'bg-blue-100'
                 }`}>
                   <SafeIcon 
                     icon={
                       activity.type === 'ai' ? FiCpu : 
-                      activity.type === 'image' ? FiImage : FiMessageSquare
+                      activity.type === 'image' ? FiImage : 
+                      activity.type === 'text-ai' ? FiZap : FiMessageSquare
                     } 
                     className={`text-sm ${
                       activity.type === 'ai' ? 'text-purple-600' : 
-                      activity.type === 'image' ? 'text-pink-600' : 'text-blue-600'
+                      activity.type === 'image' ? 'text-pink-600' : 
+                      activity.type === 'text-ai' ? 'text-cyan-600' : 'text-blue-600'
                     }`}
                   />
                 </div>
@@ -229,18 +277,26 @@ const Dashboard = () => {
           <button className={`flex items-center space-x-3 p-4 rounded-lg transition-colors ${
             aiConfig.provider === 'pollinations' 
               ? 'bg-pink-50 hover:bg-pink-100' 
+              : aiConfig.provider === 'pollinations-text'
+              ? 'bg-cyan-50 hover:bg-cyan-100'
               : 'bg-purple-50 hover:bg-purple-100'
           }`}>
             <SafeIcon 
-              icon={aiConfig.provider === 'pollinations' ? FiImage : FiCpu} 
+              icon={
+                aiConfig.provider === 'pollinations' ? FiImage : 
+                aiConfig.provider === 'pollinations-text' ? FiZap : FiCpu
+              } 
               className={`text-xl ${
-                aiConfig.provider === 'pollinations' ? 'text-pink-600' : 'text-purple-600'
+                aiConfig.provider === 'pollinations' ? 'text-pink-600' : 
+                aiConfig.provider === 'pollinations-text' ? 'text-cyan-600' : 'text-purple-600'
               }`} 
             />
             <span className={`font-medium ${
-              aiConfig.provider === 'pollinations' ? 'text-pink-600' : 'text-purple-600'
+              aiConfig.provider === 'pollinations' ? 'text-pink-600' : 
+              aiConfig.provider === 'pollinations-text' ? 'text-cyan-600' : 'text-purple-600'
             }`}>
-              {aiConfig.provider === 'pollinations' ? 'Gerar Imagem' : 'Configurar IA'}
+              {aiConfig.provider === 'pollinations' ? 'Gerar Imagem' : 
+               aiConfig.provider === 'pollinations-text' ? 'Testar Text AI' : 'Configurar IA'}
             </span>
           </button>
           
