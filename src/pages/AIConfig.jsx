@@ -1,18 +1,35 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import SafeIcon from '../common/SafeIcon';
-import * as FiIcons from 'react-icons/fi';
-import { useAI } from '../contexts/AIContext';
-
-const { FiCpu, FiSettings, FiSave, FiEye, FiEyeOff, FiHelpCircle, FiImage, FiPlay, FiMessageCircle, FiZap } = FiIcons;
+import React, { useState } from 'react'
+import { motion } from 'framer-motion'
+import SafeIcon from '../common/SafeIcon'
+import { 
+  FiCpu, 
+  FiSettings, 
+  FiSave, 
+  FiEye, 
+  FiEyeOff, 
+  FiHelpCircle, 
+  FiImage, 
+  FiPlay, 
+  FiMessageCircle, 
+  FiZap 
+} from 'react-icons/fi'
+import { useAI } from '../contexts/AIContext'
+import { toast } from 'react-hot-toast'
 
 const AIConfig = () => {
-  const { aiConfig, aiProviders, updateAIConfig, testPollinationsConnection, testPollinationsTextAPI } = useAI();
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [tempConfig, setTempConfig] = useState(aiConfig);
-  const [testResult, setTestResult] = useState(null);
-  const [testing, setTesting] = useState(false);
-  const [testMessage, setTestMessage] = useState('');
+  const { 
+    aiConfig, 
+    aiProviders, 
+    updateAIConfig, 
+    testPollinationsConnection, 
+    testPollinationsTextAPI 
+  } = useAI()
+  
+  const [showApiKey, setShowApiKey] = useState(false)
+  const [tempConfig, setTempConfig] = useState(aiConfig)
+  const [testResult, setTestResult] = useState(null)
+  const [testing, setTesting] = useState(false)
+  const [testMessage, setTestMessage] = useState('')
 
   const handleInputChange = (field, value, section = null) => {
     if (section) {
@@ -22,40 +39,40 @@ const AIConfig = () => {
           ...prev[section],
           [field]: value
         }
-      }));
+      }))
     } else {
-      setTempConfig(prev => ({ ...prev, [field]: value }));
+      setTempConfig(prev => ({ ...prev, [field]: value }))
     }
-  };
+  }
 
   const handleSave = () => {
-    updateAIConfig(tempConfig);
-    alert('Configurações salvas com sucesso!');
-  };
+    updateAIConfig(tempConfig)
+    toast.success('Configurações salvas com sucesso!')
+  }
 
   const handleTest = async () => {
-    setTesting(true);
+    setTesting(true)
     try {
       if (tempConfig.provider === 'pollinations') {
-        const result = await testPollinationsConnection();
-        setTestResult(result);
+        const result = await testPollinationsConnection()
+        setTestResult(result)
       } else if (tempConfig.provider === 'pollinations-text') {
-        const message = testMessage || 'Olá, como você pode me ajudar hoje?';
-        const result = await testPollinationsTextAPI(message);
-        setTestResult(result);
+        const message = testMessage || 'Olá, como você pode me ajudar hoje?'
+        const result = await testPollinationsTextAPI(message)
+        setTestResult(result)
       } else {
-        alert('Teste disponível apenas para Pollinations por enquanto.');
+        toast.info('Teste disponível apenas para Pollinations por enquanto.')
       }
     } catch (error) {
-      setTestResult({ success: false, error: error.message });
+      setTestResult({ success: false, error: error.message })
     }
-    setTesting(false);
-  };
+    setTesting(false)
+  }
 
-  const selectedProvider = aiProviders.find(p => p.id === tempConfig.provider);
-  const isPollinationsSelected = tempConfig.provider === 'pollinations';
-  const isPollinationsTextSelected = tempConfig.provider === 'pollinations-text';
-  const isPollinationsProvider = isPollinationsSelected || isPollinationsTextSelected;
+  const selectedProvider = aiProviders.find(p => p.id === tempConfig.provider)
+  const isPollinationsSelected = tempConfig.provider === 'pollinations'
+  const isPollinationsTextSelected = tempConfig.provider === 'pollinations-text'
+  const isPollinationsProvider = isPollinationsSelected || isPollinationsTextSelected
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -125,9 +142,9 @@ const AIConfig = () => {
                 value={isPollinationsTextSelected ? tempConfig.pollinationsText.model : tempConfig.model}
                 onChange={(e) => {
                   if (isPollinationsTextSelected) {
-                    handleInputChange('model', e.target.value, 'pollinationsText');
+                    handleInputChange('model', e.target.value, 'pollinationsText')
                   } else {
-                    handleInputChange('model', e.target.value);
+                    handleInputChange('model', e.target.value)
                   }
                 }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp-green focus:border-transparent"
@@ -224,365 +241,6 @@ const AIConfig = () => {
         </motion.div>
       </div>
 
-      {/* Pollinations Text Specific Settings */}
-      {isPollinationsTextSelected && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg shadow-sm p-6 border border-blue-200"
-        >
-          <div className="flex items-center space-x-3 mb-6">
-            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-              <SafeIcon icon={FiZap} className="text-blue-600 text-xl" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Configurações Pollinations Text</h3>
-              <p className="text-sm text-gray-500">Ajustes específicos para IA de texto via Pollinations</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Temperatura ({tempConfig.pollinationsText.temperature})
-                </label>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  value={tempConfig.pollinationsText.temperature}
-                  onChange={(e) => handleInputChange('temperature', parseFloat(e.target.value), 'pollinationsText')}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-xs text-gray-500">
-                  <span>Mais preciso</span>
-                  <span>Mais criativo</span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Máximo de Tokens
-                </label>
-                <input
-                  type="number"
-                  value={tempConfig.pollinationsText.maxTokens}
-                  onChange={(e) => handleInputChange('maxTokens', parseInt(e.target.value), 'pollinationsText')}
-                  min="50"
-                  max="2000"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp-green focus:border-transparent"
-                />
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-white/50 rounded-lg">
-                <div>
-                  <label className="font-medium text-gray-900">Usar Prompt do Sistema</label>
-                  <p className="text-sm text-gray-500">Incluir prompt do sistema nas respostas</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={tempConfig.pollinationsText.useSystemPrompt}
-                    onChange={(e) => handleInputChange('useSystemPrompt', e.target.checked, 'pollinationsText')}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-whatsapp-green/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-whatsapp-green"></div>
-                </label>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Prompt Personalizado
-                </label>
-                <textarea
-                  value={tempConfig.pollinationsText.customPrompt}
-                  onChange={(e) => handleInputChange('customPrompt', e.target.value, 'pollinationsText')}
-                  rows={4}
-                  placeholder="Adicione instruções específicas para o modelo..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp-green focus:border-transparent resize-none"
-                />
-                <p className="text-xs text-gray-500 mt-1">Este prompt será adicionado antes da mensagem do usuário</p>
-              </div>
-
-              {testResult && (
-                <div className={`p-4 rounded-lg ${testResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
-                  <h4 className={`font-medium ${testResult.success ? 'text-green-800' : 'text-red-800'}`}>
-                    {testResult.success ? 'Teste bem-sucedido!' : 'Erro no teste'}
-                  </h4>
-                  {testResult.success && testResult.result?.content && (
-                    <div className="mt-2">
-                      <p className="text-sm text-green-700 font-medium">Resposta gerada:</p>
-                      <div className="mt-1 p-3 bg-white rounded border text-sm text-gray-800">
-                        {testResult.result.content}
-                      </div>
-                      {testResult.result.metadata && (
-                        <div className="mt-2 text-xs text-green-600">
-                          Modelo: {testResult.result.metadata.model} | 
-                          Tokens: {testResult.result.metadata.tokens} | 
-                          Temp: {testResult.result.metadata.temperature}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {!testResult.success && (
-                    <p className="text-sm text-red-700 mt-1">{testResult.error}</p>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </motion.div>
-      )}
-
-      {/* Pollinations Image Specific Settings */}
-      {isPollinationsSelected && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-lg shadow-sm p-6 border border-pink-200"
-        >
-          <div className="flex items-center space-x-3 mb-6">
-            <div className="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center">
-              <SafeIcon icon={FiImage} className="text-pink-600 text-xl" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Configurações Pollinations Image</h3>
-              <p className="text-sm text-gray-500">Ajustes específicos para geração de imagens</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Dimensões da Imagem
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="number"
-                    value={tempConfig.pollinations.imageWidth}
-                    onChange={(e) => handleInputChange('imageWidth', parseInt(e.target.value), 'pollinations')}
-                    placeholder="Largura"
-                    min="256"
-                    max="2048"
-                    step="64"
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp-green focus:border-transparent"
-                  />
-                  <input
-                    type="number"
-                    value={tempConfig.pollinations.imageHeight}
-                    onChange={(e) => handleInputChange('imageHeight', parseInt(e.target.value), 'pollinations')}
-                    placeholder="Altura"
-                    min="256"
-                    max="2048"
-                    step="64"
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp-green focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Estilo da Imagem
-                </label>
-                <select
-                  value={tempConfig.pollinations.imageStyle}
-                  onChange={(e) => handleInputChange('imageStyle', e.target.value, 'pollinations')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp-green focus:border-transparent"
-                >
-                  <option value="realistic">Realista</option>
-                  <option value="artistic">Artístico</option>
-                  <option value="anime">Anime</option>
-                  <option value="3d">3D</option>
-                  <option value="abstract">Abstrato</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Seed (Semente)
-                </label>
-                <input
-                  type="number"
-                  value={tempConfig.pollinations.seed}
-                  onChange={(e) => handleInputChange('seed', parseInt(e.target.value), 'pollinations')}
-                  placeholder="-1 para aleatório"
-                  min="-1"
-                  max="999999"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp-green focus:border-transparent"
-                />
-                <p className="text-xs text-gray-500 mt-1">Use -1 para seed aleatória</p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Prefixo do Prompt
-                </label>
-                <input
-                  type="text"
-                  value={tempConfig.pollinations.imagePromptPrefix}
-                  onChange={(e) => handleInputChange('imagePromptPrefix', e.target.value, 'pollinations')}
-                  placeholder="high quality, detailed, "
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp-green focus:border-transparent"
-                />
-                <p className="text-xs text-gray-500 mt-1">Texto adicionado no início de todos os prompts</p>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-white/50 rounded-lg">
-                <div>
-                  <label className="font-medium text-gray-900">Geração de Imagens</label>
-                  <p className="text-sm text-gray-500">Ativar geração automática de imagens</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={tempConfig.pollinations.enableImageGeneration}
-                    onChange={(e) => handleInputChange('enableImageGeneration', e.target.checked, 'pollinations')}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-whatsapp-green/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-whatsapp-green"></div>
-                </label>
-              </div>
-
-              {testResult && isPollinationsSelected && (
-                <div className={`p-4 rounded-lg ${testResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
-                  <h4 className={`font-medium ${testResult.success ? 'text-green-800' : 'text-red-800'}`}>
-                    {testResult.success ? 'Teste bem-sucedido!' : 'Erro no teste'}
-                  </h4>
-                  {testResult.success && testResult.result?.imageUrl && (
-                    <div className="mt-2">
-                      <p className="text-sm text-green-700">Imagem gerada com sucesso!</p>
-                      <img 
-                        src={testResult.result.imageUrl} 
-                        alt="Teste Pollinations"
-                        className="mt-2 max-w-full h-32 object-cover rounded-lg"
-                      />
-                    </div>
-                  )}
-                  {!testResult.success && (
-                    <p className="text-sm text-red-700 mt-1">{testResult.error}</p>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </motion.div>
-      )}
-
-      {/* Advanced Settings for Non-Pollinations */}
-      {!isPollinationsProvider && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white rounded-lg shadow-sm p-6 border border-gray-200"
-        >
-          <div className="flex items-center space-x-3 mb-6">
-            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-              <SafeIcon icon={FiSettings} className="text-blue-600 text-xl" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Configurações Avançadas</h3>
-              <p className="text-sm text-gray-500">Ajuste o comportamento da IA</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Temperatura ({tempConfig.temperature})
-                  <span className="ml-1 text-gray-400">
-                    <SafeIcon icon={FiHelpCircle} className="inline text-xs" />
-                  </span>
-                </label>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  value={tempConfig.temperature}
-                  onChange={(e) => handleInputChange('temperature', parseFloat(e.target.value))}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-xs text-gray-500">
-                  <span>Mais preciso</span>
-                  <span>Mais criativo</span>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Máximo de Tokens
-                </label>
-                <input
-                  type="number"
-                  value={tempConfig.maxTokens}
-                  onChange={(e) => handleInputChange('maxTokens', parseInt(e.target.value))}
-                  min="50"
-                  max="4000"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp-green focus:border-transparent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Delay de Resposta (ms)
-                </label>
-                <input
-                  type="number"
-                  value={tempConfig.responseDelay}
-                  onChange={(e) => handleInputChange('responseDelay', parseInt(e.target.value))}
-                  min="1000"
-                  max="10000"
-                  step="500"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp-green focus:border-transparent"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Prompt do Sistema
-                </label>
-                <textarea
-                  value={tempConfig.systemPrompt}
-                  onChange={(e) => handleInputChange('systemPrompt', e.target.value)}
-                  rows={6}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-whatsapp-green focus:border-transparent resize-none"
-                  placeholder="Defina como a IA deve se comportar..."
-                />
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div>
-                  <label className="font-medium text-gray-900">Auto-resposta</label>
-                  <p className="text-sm text-gray-500">Responder automaticamente às mensagens</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={tempConfig.autoReply}
-                    onChange={(e) => handleInputChange('autoReply', e.target.checked)}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-whatsapp-green/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-whatsapp-green"></div>
-                </label>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      )}
-
       {/* Test Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -629,6 +287,32 @@ const AIConfig = () => {
           </button>
         </div>
         
+        {testResult && (
+          <div className={`mt-4 p-4 rounded-lg ${testResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+            <h4 className={`font-medium ${testResult.success ? 'text-green-800' : 'text-red-800'}`}>
+              {testResult.success ? 'Teste bem-sucedido!' : 'Erro no teste'}
+            </h4>
+            {testResult.success && testResult.result?.content && (
+              <div className="mt-2">
+                <p className="text-sm text-green-700 font-medium">Resposta gerada:</p>
+                <div className="mt-1 p-3 bg-white rounded border text-sm text-gray-800">
+                  {testResult.result.content}
+                </div>
+                {testResult.result.metadata && (
+                  <div className="mt-2 text-xs text-green-600">
+                    Modelo: {testResult.result.metadata.model} | 
+                    Tokens: {testResult.result.metadata.tokens} | 
+                    Temp: {testResult.result.metadata.temperature}
+                  </div>
+                )}
+              </div>
+            )}
+            {!testResult.success && (
+              <p className="text-sm text-red-700 mt-1">{testResult.error}</p>
+            )}
+          </div>
+        )}
+        
         {isPollinationsProvider && (
           <div className="mt-4 p-4 bg-blue-50 rounded-lg">
             <h4 className="font-medium text-blue-900 mb-2">💡 Dicas para Pollinations:</h4>
@@ -653,7 +337,7 @@ const AIConfig = () => {
         )}
       </motion.div>
     </div>
-  );
-};
+  )
+}
 
-export default AIConfig;
+export default AIConfig

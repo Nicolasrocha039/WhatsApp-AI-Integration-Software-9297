@@ -1,103 +1,14 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import SafeIcon from '../common/SafeIcon';
-import * as FiIcons from 'react-icons/fi';
-import ReactECharts from 'echarts-for-react';
-import { useAI } from '../contexts/AIContext';
-
-const { FiBarChart3, FiTrendingUp, FiMessageSquare, FiClock, FiUsers, FiCpu, FiImage, FiZap } = FiIcons;
+import React from 'react'
+import { motion } from 'framer-motion'
+import SafeIcon from '../common/SafeIcon'
+import { FiBarChart3, FiTrendingUp, FiMessageSquare, FiClock, FiUsers, FiCpu, FiImage, FiZap } from 'react-icons/fi'
+import { useAI } from '../contexts/AIContext'
 
 const Analytics = () => {
-  const { aiConfig } = useAI();
-  const isPollinationsImageActive = aiConfig.provider === 'pollinations';
-  const isPollinationsTextActive = aiConfig.provider === 'pollinations-text';
-  const isPollinationsProvider = isPollinationsImageActive || isPollinationsTextActive;
-
-  // Configuração do gráfico de mensagens por hora
-  const messagesChartOption = {
-    title: {
-      text: isPollinationsImageActive ? 'Atividade por Hora' : 
-            isPollinationsTextActive ? 'Respostas IA por Hora' : 'Mensagens por Hora',
-      left: 'center'
-    },
-    tooltip: {
-      trigger: 'axis'
-    },
-    xAxis: {
-      type: 'category',
-      data: ['00h', '04h', '08h', '12h', '16h', '20h']
-    },
-    yAxis: {
-      type: 'value'
-    },
-    series: [
-      {
-        name: 'Mensagens Recebidas',
-        type: 'line',
-        data: [12, 8, 25, 45, 38, 22],
-        smooth: true,
-        itemStyle: { color: '#25D366' }
-      },
-      {
-        name: isPollinationsImageActive ? 'Imagens Geradas' : 
-              isPollinationsTextActive ? 'Respostas Text AI' : 'Respostas IA',
-        type: 'line',
-        data: isPollinationsImageActive ? [8, 4, 15, 28, 22, 14] : 
-              isPollinationsTextActive ? [15, 10, 30, 52, 41, 28] : [10, 6, 20, 38, 32, 18],
-        smooth: true,
-        itemStyle: { 
-          color: isPollinationsImageActive ? '#EC4899' : 
-                 isPollinationsTextActive ? '#06B6D4' : '#8B5CF6' 
-        }
-      }
-    ],
-    legend: {
-      data: ['Mensagens Recebidas', 
-             isPollinationsImageActive ? 'Imagens Geradas' : 
-             isPollinationsTextActive ? 'Respostas Text AI' : 'Respostas IA'],
-      bottom: 0
-    }
-  };
-
-  // Configuração do gráfico de tipos de resposta
-  const responseTypesOption = {
-    title: {
-      text: isPollinationsImageActive ? 'Tipos de Conteúdo' : 
-            isPollinationsTextActive ? 'Modelos Utilizados' : 'Tipos de Resposta',
-      left: 'center'
-    },
-    tooltip: {
-      trigger: 'item'
-    },
-    series: [
-      {
-        name: 'Tipos',
-        type: 'pie',
-        radius: '60%',
-        data: isPollinationsImageActive ? [
-          { value: 45, name: 'Imagens Geradas' },
-          { value: 35, name: 'Mensagens de Texto' },
-          { value: 15, name: 'Comandos de Sistema' },
-          { value: 5, name: 'Erros' }
-        ] : isPollinationsTextActive ? [
-          { value: 45, name: 'OpenAI' },
-          { value: 35, name: 'Mistral' },
-          { value: 20, name: 'Claude' }
-        ] : [
-          { value: 65, name: 'IA Automática' },
-          { value: 25, name: 'Manual' },
-          { value: 10, name: 'Sem Resposta' }
-        ],
-        emphasis: {
-          itemStyle: {
-            shadowBlur: 10,
-            shadowOffsetX: 0,
-            shadowColor: 'rgba(0, 0, 0, 0.5)'
-          }
-        }
-      }
-    ]
-  };
+  const { aiConfig } = useAI()
+  const isPollinationsImageActive = aiConfig.provider === 'pollinations'
+  const isPollinationsTextActive = aiConfig.provider === 'pollinations-text'
+  const isPollinationsProvider = isPollinationsImageActive || isPollinationsTextActive
 
   const stats = [
     {
@@ -140,7 +51,7 @@ const Analytics = () => {
       color: 'text-orange-600',
       bg: 'bg-orange-100'
     }
-  ];
+  ]
 
   const topQuestions = isPollinationsImageActive ? [
     { question: 'Gere uma imagem de paisagem', count: 67 },
@@ -160,7 +71,7 @@ const Analytics = () => {
     { question: 'Como fazer um pedido?', count: 32 },
     { question: 'Formas de pagamento?', count: 28 },
     { question: 'Como cancelar pedido?', count: 22 }
-  ];
+  ]
 
   return (
     <div className="space-y-6">
@@ -270,26 +181,6 @@ const Analytics = () => {
             </div>
           </motion.div>
         ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Messages Chart */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="bg-white rounded-lg shadow-sm p-6 border border-gray-200"
-        >
-          <ReactECharts option={messagesChartOption} style={{ height: '300px' }} />
-        </motion.div>
-
-        {/* Response Types Chart */}
-        <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="bg-white rounded-lg shadow-sm p-6 border border-gray-200"
-        >
-          <ReactECharts option={responseTypesOption} style={{ height: '300px' }} />
-        </motion.div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -464,7 +355,7 @@ const Analytics = () => {
         </motion.div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Analytics;
+export default Analytics

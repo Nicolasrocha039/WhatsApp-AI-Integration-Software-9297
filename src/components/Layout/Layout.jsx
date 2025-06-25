@@ -1,6 +1,6 @@
-import React from 'react';
-import Sidebar from './Sidebar';
-import Header from './Header';
+import React from 'react'
+import Sidebar from './Sidebar'
+import Header from './Header'
 
 const Layout = ({ children }) => {
   return (
@@ -13,7 +13,7 @@ const Layout = ({ children }) => {
         </main>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Layout;
+export default Layout

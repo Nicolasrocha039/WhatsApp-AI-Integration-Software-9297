@@ -1,15 +1,22 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import SafeIcon from '../common/SafeIcon';
-import * as FiIcons from 'react-icons/fi';
-import { useWhatsApp } from '../contexts/WhatsAppContext';
-import { useAI } from '../contexts/AIContext';
-
-const { FiMessageSquare, FiUsers, FiCpu, FiTrendingUp, FiActivity, FiClock, FiImage, FiZap } = FiIcons;
+import React from 'react'
+import { motion } from 'framer-motion'
+import SafeIcon from '../common/SafeIcon'
+import { 
+  FiMessageSquare, 
+  FiUsers, 
+  FiCpu, 
+  FiTrendingUp, 
+  FiActivity, 
+  FiClock, 
+  FiImage, 
+  FiZap 
+} from 'react-icons/fi'
+import { useWhatsApp } from '../contexts/WhatsAppContext'
+import { useAI } from '../contexts/AIContext'
 
 const Dashboard = () => {
-  const { isConnected, messages } = useWhatsApp();
-  const { aiConfig } = useAI();
+  const { isConnected, messages } = useWhatsApp()
+  const { aiConfig } = useAI()
 
   const stats = [
     {
@@ -44,7 +51,7 @@ const Dashboard = () => {
       icon: FiTrendingUp,
       color: 'bg-orange-500'
     }
-  ];
+  ]
 
   const recentActivity = [
     { type: 'message', user: 'João Silva', action: 'enviou uma mensagem', time: '2 min atrás' },
@@ -67,7 +74,7 @@ const Dashboard = () => {
               aiConfig.provider === 'pollinations-text' ? 'processou 4 mensagens de texto' : 'processou 3 mensagens',
       time: '15 min atrás' 
     }
-  ];
+  ]
 
   const getProviderStatus = () => {
     if (aiConfig.provider === 'pollinations') {
@@ -76,7 +83,7 @@ const Dashboard = () => {
         status: 'Ativo',
         color: 'text-pink-600',
         bgColor: 'bg-pink-500'
-      };
+      }
     }
     if (aiConfig.provider === 'pollinations-text') {
       return {
@@ -84,17 +91,17 @@ const Dashboard = () => {
         status: 'Ativo',
         color: 'text-cyan-600',
         bgColor: 'bg-cyan-500'
-      };
+      }
     }
     return {
       name: `IA (${aiConfig.provider})`,
       status: aiConfig.apiKey ? 'Configurado' : 'Pendente',
       color: aiConfig.apiKey ? 'text-green-600' : 'text-yellow-600',
       bgColor: aiConfig.apiKey ? 'bg-green-500' : 'bg-yellow-500'
-    };
-  };
+    }
+  }
 
-  const providerInfo = getProviderStatus();
+  const providerInfo = getProviderStatus()
 
   return (
     <div className="space-y-6">
@@ -307,7 +314,7 @@ const Dashboard = () => {
         </div>
       </motion.div>
     </div>
-  );
-};
+  )
+}
 
-export default Dashboard;
+export default Dashboard

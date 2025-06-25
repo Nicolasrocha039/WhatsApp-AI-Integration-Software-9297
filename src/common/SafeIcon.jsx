@@ -1,18 +1,11 @@
-import React from 'react';
-import * as FiIcons from 'react-icons/fi';
-import { FiAlertTriangle } from 'react-icons/fi';
+import React from 'react'
 
-const SafeIcon = ({ icon, name, ...props }) => {
-  let IconComponent;
-  try {
-    IconComponent = icon || (name && FiIcons[`Fi${name}`]);
-  } catch (e) {
-    IconComponent = null;
+const SafeIcon = ({ icon: IconComponent, className = '', ...props }) => {
+  if (!IconComponent) {
+    return <span className={`inline-block w-4 h-4 ${className}`} {...props}>⚠️</span>
   }
+  
+  return <IconComponent className={className} {...props} />
+}
 
-  return IconComponent
-    ? React.createElement(IconComponent, props)
-    : <FiAlertTriangle {...props} />;
-};
-
-export default SafeIcon;
+export default SafeIcon

@@ -1,26 +1,25 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState } from 'react'
 
-const AIContext = createContext();
+const AIContext = createContext()
 
 export const useAI = () => {
-  const context = useContext(AIContext);
+  const context = useContext(AIContext)
   if (!context) {
-    throw new Error('useAI must be used within an AIProvider');
+    throw new Error('useAI must be used within an AIProvider')
   }
-  return context;
-};
+  return context
+}
 
 export const AIProvider = ({ children }) => {
   const [aiConfig, setAiConfig] = useState({
-    provider: 'openai',
-    model: 'gpt-3.5-turbo',
+    provider: 'pollinations-text',
+    model: 'openai',
     apiKey: '',
     temperature: 0.7,
     maxTokens: 150,
     systemPrompt: 'Você é um assistente útil e amigável que responde mensagens do WhatsApp.',
     autoReply: true,
     responseDelay: 2000,
-    // Configurações específicas do Pollinations
     pollinations: {
       imageModel: 'flux',
       imageWidth: 1024,
@@ -30,7 +29,6 @@ export const AIProvider = ({ children }) => {
       imageStyle: 'realistic',
       seed: -1
     },
-    // Configurações específicas do Pollinations Text
     pollinationsText: {
       model: 'openai',
       temperature: 0.7,
@@ -39,7 +37,7 @@ export const AIProvider = ({ children }) => {
       customPrompt: '',
       useSystemPrompt: true
     }
-  });
+  })
 
   const [aiProviders] = useState([
     { 
@@ -53,13 +51,6 @@ export const AIProvider = ({ children }) => {
       id: 'anthropic', 
       name: 'Claude', 
       models: ['claude-3-sonnet', 'claude-3-haiku'],
-      type: 'text',
-      requiresApiKey: true
-    },
-    { 
-      id: 'gemini', 
-      name: 'Google Gemini', 
-      models: ['gemini-pro', 'gemini-pro-vision'],
       type: 'text',
       requiresApiKey: true
     },
@@ -79,22 +70,22 @@ export const AIProvider = ({ children }) => {
       requiresApiKey: false,
       description: 'Geração gratuita de imagens com IA'
     }
-  ]);
+  ])
 
   const updateAIConfig = (updates) => {
-    setAiConfig(prev => ({ ...prev, ...updates }));
-  };
+    setAiConfig(prev => ({ ...prev, ...updates }))
+  }
 
   const generateAIResponse = async (message, context = {}) => {
     // Simulação de resposta da IA baseada no provedor
-    await new Promise(resolve => setTimeout(resolve, aiConfig.responseDelay));
+    await new Promise(resolve => setTimeout(resolve, aiConfig.responseDelay))
     
     if (aiConfig.provider === 'pollinations') {
-      return await generatePollinationsImage(message);
+      return await generatePollinationsImage(message)
     }
     
     if (aiConfig.provider === 'pollinations-text') {
-      return await generatePollinationsTextResponse(message);
+      return await generatePollinationsTextResponse(message)
     }
     
     const responses = [
@@ -103,48 +94,15 @@ export const AIProvider = ({ children }) => {
       'Obrigado por entrar em contato! Estou aqui para ajudar.',
       'Essa é uma ótima pergunta. Vou fazer o meu melhor para responder.',
       'Posso ajudá-lo com mais informações sobre isso.'
-    ];
+    ]
     
-    return responses[Math.floor(Math.random() * responses.length)];
-  };
+    return responses[Math.floor(Math.random() * responses.length)]
+  }
 
   const generatePollinationsTextResponse = async (message) => {
     try {
-      const config = aiConfig.pollinationsText;
+      const config = aiConfig.pollinationsText
       
-      // Preparar o prompt
-      let fullPrompt = message;
-      if (config.useSystemPrompt && aiConfig.systemPrompt) {
-        fullPrompt = `${aiConfig.systemPrompt}\n\nUsuário: ${message}\nAssistente:`;
-      }
-      if (config.customPrompt) {
-        fullPrompt = `${config.customPrompt}\n\n${fullPrompt}`;
-      }
-
-      // Construir payload para a API
-      const payload = {
-        model: config.model,
-        messages: [
-          {
-            role: 'user',
-            content: fullPrompt
-          }
-        ],
-        temperature: config.temperature,
-        max_tokens: config.maxTokens,
-        stream: config.stream
-      };
-
-      // Simular chamada para a API (em produção, você faria uma chamada real)
-      // const response = await fetch('https://text.pollinations.ai/openai', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify(payload)
-      // });
-
-      // Simulação de resposta baseada no modelo selecionado
       const simulatedResponses = {
         openai: [
           `Baseado na sua pergunta "${message}", posso ajudá-lo com informações detalhadas. Como assistente IA via Pollinations, estou aqui para fornecer respostas úteis e precisas.`,
@@ -161,10 +119,10 @@ export const AIProvider = ({ children }) => {
           `Utilizando as capacidades do Claude através da Pollinations, posso processar sua solicitação de forma cuidadosa e detalhada.`,
           `Como assistente Claude via Pollinations, entendo o contexto da sua pergunta e posso fornecer insights valiosos.`
         ]
-      };
+      }
 
-      const responses = simulatedResponses[config.model] || simulatedResponses.openai;
-      const selectedResponse = responses[Math.floor(Math.random() * responses.length)];
+      const responses = simulatedResponses[config.model] || simulatedResponses.openai
+      const selectedResponse = responses[Math.floor(Math.random() * responses.length)]
 
       return {
         type: 'text',
@@ -175,29 +133,27 @@ export const AIProvider = ({ children }) => {
           tokens: config.maxTokens,
           temperature: config.temperature
         }
-      };
+      }
     } catch (error) {
-      return 'Desculpe, houve um erro ao processar sua mensagem via Pollinations Text. Tente novamente.';
+      return 'Desculpe, houve um erro ao processar sua mensagem via Pollinations Text. Tente novamente.'
     }
-  };
+  }
 
   const generatePollinationsImage = async (prompt) => {
     try {
-      const config = aiConfig.pollinations;
-      const enhancedPrompt = config.imagePromptPrefix + prompt;
+      const config = aiConfig.pollinations
+      const enhancedPrompt = config.imagePromptPrefix + prompt
       
-      // Construir URL da API Pollinations
-      const baseUrl = 'https://image.pollinations.ai/prompt';
+      const baseUrl = 'https://image.pollinations.ai/prompt'
       const params = new URLSearchParams({
         model: config.imageModel,
         width: config.imageWidth,
         height: config.imageHeight,
         seed: config.seed === -1 ? Math.floor(Math.random() * 1000000) : config.seed
-      });
+      })
       
-      const imageUrl = `${baseUrl}/${encodeURIComponent(enhancedPrompt)}?${params}`;
+      const imageUrl = `${baseUrl}/${encodeURIComponent(enhancedPrompt)}?${params}`
       
-      // Simular resposta com a imagem gerada
       return {
         type: 'image',
         content: `Imagem gerada com sucesso! 🎨\n\nPrompt: "${prompt}"\nModelo: ${config.imageModel}`,
@@ -207,37 +163,37 @@ export const AIProvider = ({ children }) => {
           dimensions: `${config.imageWidth}x${config.imageHeight}`,
           prompt: enhancedPrompt
         }
-      };
+      }
     } catch (error) {
-      return 'Desculpe, houve um erro ao gerar a imagem. Tente novamente.';
+      return 'Desculpe, houve um erro ao gerar a imagem. Tente novamente.'
     }
-  };
+  }
 
   const testPollinationsConnection = async () => {
     try {
       if (aiConfig.provider === 'pollinations') {
-        const testPrompt = 'beautiful sunset landscape';
-        const result = await generatePollinationsImage(testPrompt);
-        return { success: true, result };
+        const testPrompt = 'beautiful sunset landscape'
+        const result = await generatePollinationsImage(testPrompt)
+        return { success: true, result }
       } else if (aiConfig.provider === 'pollinations-text') {
-        const testMessage = 'Hello, this is a test message';
-        const result = await generatePollinationsTextResponse(testMessage);
-        return { success: true, result };
+        const testMessage = 'Hello, this is a test message'
+        const result = await generatePollinationsTextResponse(testMessage)
+        return { success: true, result }
       }
-      return { success: false, error: 'Provider not supported for testing' };
+      return { success: false, error: 'Provider not supported for testing' }
     } catch (error) {
-      return { success: false, error: error.message };
+      return { success: false, error: error.message }
     }
-  };
+  }
 
   const testPollinationsTextAPI = async (testMessage = 'Hello, how are you?') => {
     try {
-      const result = await generatePollinationsTextResponse(testMessage);
-      return { success: true, result };
+      const result = await generatePollinationsTextResponse(testMessage)
+      return { success: true, result }
     } catch (error) {
-      return { success: false, error: error.message };
+      return { success: false, error: error.message }
     }
-  };
+  }
 
   const value = {
     aiConfig,
@@ -248,11 +204,11 @@ export const AIProvider = ({ children }) => {
     generatePollinationsTextResponse,
     testPollinationsConnection,
     testPollinationsTextAPI
-  };
+  }
 
   return (
     <AIContext.Provider value={value}>
       {children}
     </AIContext.Provider>
-  );
-};
+  )
+}

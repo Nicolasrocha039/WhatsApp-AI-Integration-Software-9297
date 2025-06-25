@@ -1,10 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import SafeIcon from '../common/SafeIcon';
-import * as FiIcons from 'react-icons/fi';
-import { useWhatsApp } from '../contexts/WhatsAppContext';
-
-const { FiSmartphone, FiWifi, FiRefreshCw, FiCheck, FiX, FiQrCode } = FiIcons;
+import React, { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
+import SafeIcon from '../common/SafeIcon'
+import { FiSmartphone, FiWifi, FiRefreshCw, FiCheck, FiX, FiQrCode } from 'react-icons/fi'
+import { useWhatsApp } from '../contexts/WhatsAppContext'
 
 const Connection = () => {
   const { 
@@ -13,31 +11,31 @@ const Connection = () => {
     phoneNumber, 
     connectionStatus, 
     connectWhatsApp, 
-    disconnectWhatsApp,
+    disconnectWhatsApp, 
     setQrCode 
-  } = useWhatsApp();
-
-  const [showQR, setShowQR] = useState(false);
+  } = useWhatsApp()
+  
+  const [showQR, setShowQR] = useState(false)
 
   useEffect(() => {
     if (connectionStatus === 'connecting') {
       // Simular geração de QR Code
       setTimeout(() => {
-        setQrCode('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==');
-        setShowQR(true);
-      }, 1000);
+        setQrCode('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==')
+        setShowQR(true)
+      }, 1000)
     }
-  }, [connectionStatus, setQrCode]);
+  }, [connectionStatus, setQrCode])
 
   const handleConnect = async () => {
-    setShowQR(false);
-    await connectWhatsApp();
-  };
+    setShowQR(false)
+    await connectWhatsApp()
+  }
 
   const handleDisconnect = () => {
-    disconnectWhatsApp();
-    setShowQR(false);
-  };
+    disconnectWhatsApp()
+    setShowQR(false)
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -90,7 +88,7 @@ const Connection = () => {
                   <span className="font-medium text-gray-900">{phoneNumber}</span>
                 </div>
               )}
-
+              
               <button
                 onClick={handleDisconnect}
                 className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
@@ -109,7 +107,7 @@ const Connection = () => {
                   </span>
                 </div>
               </div>
-
+              
               <button
                 onClick={handleConnect}
                 disabled={connectionStatus === 'connecting'}
@@ -215,7 +213,7 @@ const Connection = () => {
         </div>
       </motion.div>
     </div>
-  );
-};
+  )
+}
 
-export default Connection;
+export default Connection

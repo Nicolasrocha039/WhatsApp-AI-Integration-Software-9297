@@ -1,13 +1,18 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import SafeIcon from '../../common/SafeIcon';
-import * as FiIcons from 'react-icons/fi';
-
-const { FiHome, FiSmartphone, FiCpu, FiMessageSquare, FiBarChart3, FiSettings } = FiIcons;
+import React from 'react'
+import { Link, useLocation } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import SafeIcon from '../../common/SafeIcon'
+import { 
+  FiHome, 
+  FiSmartphone, 
+  FiCpu, 
+  FiMessageSquare, 
+  FiBarChart3, 
+  FiSettings 
+} from 'react-icons/fi'
 
 const Sidebar = () => {
-  const location = useLocation();
+  const location = useLocation()
 
   const menuItems = [
     { icon: FiHome, label: 'Dashboard', path: '/' },
@@ -16,7 +21,7 @@ const Sidebar = () => {
     { icon: FiMessageSquare, label: 'Mensagens', path: '/messages' },
     { icon: FiBarChart3, label: 'Analytics', path: '/analytics' },
     { icon: FiSettings, label: 'Configurações', path: '/settings' }
-  ];
+  ]
 
   return (
     <div className="w-64 bg-white shadow-lg">
@@ -34,7 +39,8 @@ const Sidebar = () => {
 
       <nav className="mt-6">
         {menuItems.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = location.pathname === item.path
+          
           return (
             <Link key={item.path} to={item.path}>
               <motion.div
@@ -49,11 +55,11 @@ const Sidebar = () => {
                 <span>{item.label}</span>
               </motion.div>
             </Link>
-          );
+          )
         })}
       </nav>
     </div>
-  );
-};
+  )
+}
 
-export default Sidebar;
+export default Sidebar

@@ -1,20 +1,16 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import SafeIcon from '../common/SafeIcon';
-import * as FiIcons from 'react-icons/fi';
-import { useWhatsApp } from '../contexts/WhatsAppContext';
-import { useAI } from '../contexts/AIContext';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-
-const { FiMessageSquare, FiSend, FiUser, FiCpu, FiSearch, FiFilter, FiImage, FiZap } = FiIcons;
+import React, { useState } from 'react'
+import { motion } from 'framer-motion'
+import SafeIcon from '../common/SafeIcon'
+import { FiMessageSquare, FiSend, FiUser, FiCpu, FiSearch, FiFilter, FiImage, FiZap } from 'react-icons/fi'
+import { useWhatsApp } from '../contexts/WhatsAppContext'
+import { useAI } from '../contexts/AIContext'
 
 const Messages = () => {
-  const { messages, sendMessage } = useWhatsApp();
-  const { generateAIResponse, aiConfig } = useAI();
-  const [selectedChat, setSelectedChat] = useState(null);
-  const [newMessage, setNewMessage] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
+  const { messages, sendMessage } = useWhatsApp()
+  const { generateAIResponse, aiConfig } = useAI()
+  const [selectedChat, setSelectedChat] = useState(null)
+  const [newMessage, setNewMessage] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
 
   // Mock data para demonstração
   const mockChats = [
@@ -50,7 +46,7 @@ const Messages = () => {
       unread: 0,
       avatar: 'AC'
     }
-  ];
+  ]
 
   const mockMessages = [
     {
@@ -98,30 +94,37 @@ const Messages = () => {
       timestamp: new Date(Date.now() - 300000),
       type: 'incoming'
     }
-  ];
+  ]
 
   const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!newMessage.trim() || !selectedChat) return;
+    e.preventDefault()
+    if (!newMessage.trim() || !selectedChat) return
 
-    await sendMessage(selectedChat.name, newMessage);
+    await sendMessage(selectedChat.name, newMessage)
     
     // Simular resposta automática da IA se estiver ativada
     if (aiConfig.autoReply) {
       setTimeout(async () => {
-        const aiResponse = await generateAIResponse(newMessage);
+        const aiResponse = await generateAIResponse(newMessage)
         // Aqui você adicionaria a resposta da IA às mensagens
-        console.log('Resposta da IA:', aiResponse);
-      }, aiConfig.responseDelay);
+        console.log('Resposta da IA:', aiResponse)
+      }, aiConfig.responseDelay)
     }
     
-    setNewMessage('');
-  };
+    setNewMessage('')
+  }
 
   const filteredChats = mockChats.filter(chat =>
     chat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     chat.lastMessage.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  )
+
+  const formatTime = (date) => {
+    return new Intl.DateTimeFormat('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date)
+  }
 
   return (
     <div className="h-full flex flex-col">
@@ -173,7 +176,7 @@ const Messages = () => {
                     <div className="flex items-center justify-between">
                       <h4 className="font-medium text-gray-900 truncate">{chat.name}</h4>
                       <span className="text-xs text-gray-500">
-                        {format(chat.timestamp, 'HH:mm', { locale: ptBR })}
+                        {formatTime(chat.timestamp)}
                       </span>
                     </div>
                     <p className="text-sm text-gray-500 truncate">{chat.lastMessage}</p>
@@ -273,7 +276,7 @@ const Messages = () => {
                         message.type === 'ai' ? 'text-purple-600' : 
                         message.type === 'text-ai' ? 'text-cyan-600' : 'text-white/70'
                       }`}>
-                        {format(message.timestamp, 'HH:mm', { locale: ptBR })}
+                        {formatTime(message.timestamp)}
                       </p>
                     </div>
                   </div>
@@ -334,7 +337,7 @@ const Messages = () => {
         </motion.div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Messages;
+export default Messages
